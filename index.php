@@ -70,42 +70,42 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
         .tour-img-list { width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid #f0f0f0; }
 
         /* =========================================
-           NUEVO ESTILO "ROLLO FOTOGRÁFICO" (REEL) 
+           ESTILO "ROLLO FOTOGRÁFICO" (REEL) 
            ========================================= */
         .gallery-reel-container {
             width: 100%;
-            overflow-x: auto; /* Permite scroll horizontal */
+            overflow-x: auto; 
             display: flex;
-            gap: 12px;
-            padding-bottom: 15px; /* Espacio para scrollbar */
-            scroll-snap-type: x mandatory; /* Efecto imán */
-            -webkit-overflow-scrolling: touch; /* Suavidad en iPhone */
-            margin-bottom: 20px;
+            gap: 10px;
+            padding-bottom: 10px; 
+            scroll-snap-type: x mandatory; 
+            -webkit-overflow-scrolling: touch; 
+            margin-bottom: 15px;
         }
         
-        /* Altura dinámica: En móvil usa porcentaje de pantalla, en PC fijo */
         .gallery-reel-item {
-            height: 55vh; /* Ocupa el 55% de la altura de la pantalla en móvil */
-            width: auto;  /* El ancho se adapta a la foto (NO SE RECORTA) */
+            /* AJUSTE DE ALTURA (-30%) */
+            height: 38vh;  /* Antes 55vh */
+            width: auto;  
+            max-width: none; 
+            
             border-radius: 12px;
-            scroll-snap-align: center; /* Centrar al soltar */
-            flex-shrink: 0; /* Evita que se aplasten */
+            scroll-snap-align: center; 
+            flex-shrink: 0; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            cursor: zoom-in; /* Indica que se puede ampliar */
-            object-fit: contain; /* Asegura que se vea completa */
-            background: #000; /* Fondo negro si la foto no llena */
+            cursor: zoom-in; 
+            background: #fff; 
         }
 
         @media (min-width: 768px) {
-            .gallery-reel-item { height: 500px; } /* Altura fija en PC */
+            .gallery-reel-item { height: 350px; } /* Antes 500px (PC) */
         }
         
-        /* Scrollbar discreto */
-        .gallery-reel-container::-webkit-scrollbar { height: 6px; }
+        .gallery-reel-container::-webkit-scrollbar { height: 4px; }
         .gallery-reel-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
         .gallery-reel-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
 
-        /* LIGHTBOX (Zomm tipo WhatsApp) */
+        /* LIGHTBOX (Zoom) */
         #lightbox {
             display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); align-items: center; justify-content: center; flex-direction: column;
@@ -147,7 +147,6 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
         </div>
 
         <?php 
-            // Unimos la imagen principal con la galería para mostrar todo en el rollo
             $imagenesParaMostrar = [];
             if(!empty($singleTour['imagen'])) $imagenesParaMostrar[] = $singleTour['imagen'];
             if(!empty($singleTour['galeria'])) {
@@ -215,7 +214,6 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
     </div>
 
     <script>
-        // --- CALCULADORA ---
         const priceAdult = <?= $singleTour['precio_cop'] ?>;
         const priceKid = <?= $singleTour['precio_nino'] ?: 0 ?>;
         const rateUsd = <?= $tasa_tuya_usd ?>; const rateBrl = <?= $tasa_tuya_brl ?>;
@@ -235,18 +233,11 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
         inputAdult.addEventListener('input', calc); inputKid.addEventListener('input', calc);
         calc();
 
-        // --- LIGHTBOX (ZOOM FOTOS) ---
+        // LIGHTBOX
         const lightbox = document.getElementById('lightbox');
         const lightboxImg = document.getElementById('lightbox-img');
-
-        function openLightbox(src) {
-            lightboxImg.src = src;
-            lightbox.style.display = 'flex';
-        }
-
-        function closeLightbox() {
-            lightbox.style.display = 'none';
-        }
+        function openLightbox(src) { lightboxImg.src = src; lightbox.style.display = 'flex'; }
+        function closeLightbox() { lightbox.style.display = 'none'; }
     </script>
 
 <?php else: ?>
