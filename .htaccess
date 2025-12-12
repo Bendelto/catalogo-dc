@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /precios/
+
+    # 1. Regla para que /admin entre a admin.php
+    RewriteRule ^admin/?$ admin.php [L,NC]
+
+    # 2. Si el archivo o carpeta existe físicamente, úsalo directamente
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # 3. Todo lo demás (tours) mándalo a index.php
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
