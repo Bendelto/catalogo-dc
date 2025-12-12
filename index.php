@@ -1,30 +1,52 @@
 <?php
-// CONFIG Y TASA (Mismo código base)
+// 1. CARGAR CONFIGURACIÓN
 $fileConfig = 'config.json';
 $config = file_exists($fileConfig) ? json_decode(file_get_contents($fileConfig), true) : ['margen_usd' => 200, 'margen_brl' => 200];
-$margen_usd = $config['margen_usd']; $margen_brl = $config['margen_brl'];
+$margen_usd = $config['margen_usd'];
+$margen_brl = $config['margen_brl'];
 
+// 2. GESTIÓN DE MONEDA Y API
 $cacheFile = 'tasa.json';
-if (!file_exists($cacheFile) || (time() - filemtime($cacheFile)) > 43200) {
-    $response = @file_get_contents("https://open.er-api.com/v6/latest/COP");
+$currentTime = time();
+$cacheTime = 12 * 60 * 60; // 12 horas
+
+if (!file_exists($cacheFile) || ($currentTime - filemtime($cacheFile)) > $cacheTime) {
+    $apiUrl = "https://open.er-api.com/v6/latest/COP";
+    $response = @file_get_contents($apiUrl);
     if($response) file_put_contents($cacheFile, $response);
 }
+
+// 3. CÁLCULO DE TASAS
 $rates = json_decode(file_get_contents($cacheFile), true);
-$tasa_tuya_usd = (1 / $rates['rates']['USD']) - $margen_usd;
-$tasa_tuya_brl = (1 / $rates['rates']['BRL']) - $margen_brl;
+$tasa_oficial_usd = 1 / $rates['rates']['USD']; 
+$tasa_oficial_brl = 1 / $rates['rates']['BRL'];
+$tasa_tuya_usd = $tasa_oficial_usd - $margen_usd;
+$tasa_tuya_brl = $tasa_oficial_brl - $margen_brl;
 
-function precio_inteligente($valor) { return (float)(ceil($valor * 2) / 2); }
+// FUNCIÓN DE REDONDEO INTELIGENTE
+function precio_inteligente($valor) {
+    $redondeado = ceil($valor * 2) / 2;
+    return (float)$redondeado; 
+}
 
+// 4. CARGAR TOURS
 $tours = file_exists('data.json') ? json_decode(file_get_contents('data.json'), true) : [];
-uasort($tours, function($a, $b) { return strcasecmp($a['nombre'], $b['nombre']); });
 
+// ORDENAR ALFABÉTICAMENTE
+uasort($tours, function($a, $b) {
+    return strcasecmp($a['nombre'], $b['nombre']);
+});
+
+// Detectar slug
 $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $base_path = dirname($_SERVER['SCRIPT_NAME']);
 if($base_path == '/') $base_path = '';
 $slug_solicitado = trim(str_replace($base_path, '', $request_uri), '/');
 
 $singleTour = null;
-if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $tours[$slug_solicitado];
+if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
+    $singleTour = $tours[$slug_solicitado];
+}
 ?>
 
 <!DOCTYPE html>
@@ -42,18 +64,57 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
         .calc-container { max-width: 600px; margin: 0 auto; }
         .main-logo { width: 300px; max-width: 85%; height: auto; display: block; margin: 0 auto; }
         
+        /* ESTILOS DE TARJETAS (Listado) */
         .card-price { border: 0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; }
         .card-price:hover { transform: translateY(-5px); }
-        
         .tour-img-list { width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid #f0f0f0; }
-        
-        /* CARRUSEL Y DETALLE */
-        .tour-img-detail { width: 100%; height: 300px; object-fit: cover; border-radius: 12px; }
-        .carousel-item img { width: 100%; height: 300px; object-fit: cover; border-radius: 12px; }
-        .carousel-indicators [data-bs-target] { background-color: #fff; border: 1px solid #000; width: 10px; height: 10px; border-radius: 50%; }
 
-        .tour-description { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; white-space: pre-line; line-height: 1.6; color: #555; }
+        /* =========================================
+           NUEVO ESTILO "ROLLO FOTOGRÁFICO" (REEL) 
+           ========================================= */
+        .gallery-reel-container {
+            width: 100%;
+            overflow-x: auto; /* Permite scroll horizontal */
+            display: flex;
+            gap: 12px;
+            padding-bottom: 15px; /* Espacio para scrollbar */
+            scroll-snap-type: x mandatory; /* Efecto imán */
+            -webkit-overflow-scrolling: touch; /* Suavidad en iPhone */
+            margin-bottom: 20px;
+        }
         
+        /* Altura dinámica: En móvil usa porcentaje de pantalla, en PC fijo */
+        .gallery-reel-item {
+            height: 55vh; /* Ocupa el 55% de la altura de la pantalla en móvil */
+            width: auto;  /* El ancho se adapta a la foto (NO SE RECORTA) */
+            border-radius: 12px;
+            scroll-snap-align: center; /* Centrar al soltar */
+            flex-shrink: 0; /* Evita que se aplasten */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            cursor: zoom-in; /* Indica que se puede ampliar */
+            object-fit: contain; /* Asegura que se vea completa */
+            background: #000; /* Fondo negro si la foto no llena */
+        }
+
+        @media (min-width: 768px) {
+            .gallery-reel-item { height: 500px; } /* Altura fija en PC */
+        }
+        
+        /* Scrollbar discreto */
+        .gallery-reel-container::-webkit-scrollbar { height: 6px; }
+        .gallery-reel-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .gallery-reel-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+
+        /* LIGHTBOX (Zomm tipo WhatsApp) */
+        #lightbox {
+            display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); align-items: center; justify-content: center; flex-direction: column;
+        }
+        #lightbox img { max-width: 100%; max-height: 90vh; object-fit: contain; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; cursor: pointer; z-index: 10000; }
+
+        /* Resto de estilos */
+        .tour-description { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; white-space: pre-line; line-height: 1.6; color: #555; }
         h4, h6 { font-weight: 700; color: #2c3e50; }
         .price-usd { color: #198754; font-weight: 700; }
         .price-brl { color: #0d6efd; font-weight: 700; }
@@ -61,7 +122,6 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
         .flag-icon { width: 20px; vertical-align: text-bottom; margin-right: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
         .badge-tasa { font-size: 0.8rem; background: #fff; border: 1px solid #dee2e6; color: #6c757d; padding: 6px 12px; border-radius: 50px; display: inline-flex; align-items: center; }
         
-        /* Calculadora */
         .calc-box { background-color: #fff; border-radius: 12px; padding: 20px; border: 1px solid #edf2f7; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .form-control-qty { text-align: center; font-weight: bold; background: #f8f9fa; height: 50px; font-size: 1.3rem; }
         .total-display { background-color: #e7f1ff; color: #0d6efd; border: 1px solid #cce5ff; border-radius: 12px; padding: 20px; margin-top: 20px; }
@@ -72,41 +132,40 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
 </head>
 <body class="py-4">
 
+<div id="lightbox" onclick="closeLightbox()">
+    <div class="lightbox-close">&times;</div>
+    <img id="lightbox-img" src="">
+</div>
+
 <div class="container main-container">
 <?php if ($singleTour): ?>
     <div class="calc-container">
+        
         <div class="d-flex align-items-center gap-3 mb-4">
             <a href="./" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
             <h4 class="mb-0 lh-sm"><?= htmlspecialchars($singleTour['nombre']) ?></h4>
         </div>
 
-        <?php if(!empty($singleTour['galeria'])): ?>
-            <div id="tourCarousel" class="carousel slide mb-4 shadow-sm" data-bs-ride="carousel" style="border-radius: 12px;">
-                <div class="carousel-indicators">
-                    <button type="button" data-bs-target="#tourCarousel" data-bs-slide-to="0" class="active"></button>
-                    <?php foreach($singleTour['galeria'] as $idx => $img): ?>
-                        <button type="button" data-bs-target="#tourCarousel" data-bs-slide-to="<?= $idx + 1 ?>"></button>
-                    <?php endforeach; ?>
-                </div>
-                <div class="carousel-inner" style="border-radius: 12px;">
-                    <div class="carousel-item active">
-                        <img src="<?= !empty($singleTour['imagen']) ? $singleTour['imagen'] : 'img/default.jpg' ?>" class="d-block w-100" alt="Portada">
-                    </div>
-                    <?php foreach($singleTour['galeria'] as $img): ?>
-                        <div class="carousel-item">
-                            <img src="<?= $img ?>" class="d-block w-100" alt="Galeria">
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-                <button class="carousel-control-prev" type="button" data-bs-target="#tourCarousel" data-bs-slide="prev">
-                    <span class="carousel-control-prev-icon bg-dark rounded-circle bg-opacity-50 p-3" aria-hidden="true"></span>
-                </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#tourCarousel" data-bs-slide="next">
-                    <span class="carousel-control-next-icon bg-dark rounded-circle bg-opacity-50 p-3" aria-hidden="true"></span>
-                </button>
+        <?php 
+            // Unimos la imagen principal con la galería para mostrar todo en el rollo
+            $imagenesParaMostrar = [];
+            if(!empty($singleTour['imagen'])) $imagenesParaMostrar[] = $singleTour['imagen'];
+            if(!empty($singleTour['galeria'])) {
+                foreach($singleTour['galeria'] as $gImg) $imagenesParaMostrar[] = $gImg;
+            }
+        ?>
+
+        <?php if(count($imagenesParaMostrar) > 0): ?>
+            <div class="gallery-reel-container">
+                <?php foreach($imagenesParaMostrar as $imgSrc): ?>
+                    <img src="<?= $imgSrc ?>" class="gallery-reel-item" onclick="openLightbox('<?= $imgSrc ?>')" alt="Foto Tour">
+                <?php endforeach; ?>
             </div>
-        <?php elseif(!empty($singleTour['imagen'])): ?>
-            <img src="<?= $singleTour['imagen'] ?>" class="tour-img-detail mb-4" alt="<?= htmlspecialchars($singleTour['nombre']) ?>">
+            <div class="text-center text-muted small mb-4" style="font-size:0.75rem;">
+                <i class="fa-solid fa-hand-pointer"></i> Desliza o toca para ampliar
+            </div>
+        <?php else: ?>
+            <div class="alert alert-secondary text-center">Sin fotos disponibles</div>
         <?php endif; ?>
         <?php if(!empty($singleTour['descripcion'])): ?>
             <div class="tour-description"><?= nl2br(htmlspecialchars($singleTour['descripcion'])) ?></div>
@@ -156,6 +215,7 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
     </div>
 
     <script>
+        // --- CALCULADORA ---
         const priceAdult = <?= $singleTour['precio_cop'] ?>;
         const priceKid = <?= $singleTour['precio_nino'] ?: 0 ?>;
         const rateUsd = <?= $tasa_tuya_usd ?>; const rateBrl = <?= $tasa_tuya_brl ?>;
@@ -173,7 +233,20 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
             dBRL.innerText = 'R$ ' + pInt(t/rateBrl);
         }
         inputAdult.addEventListener('input', calc); inputKid.addEventListener('input', calc);
-        calc(); // Init
+        calc();
+
+        // --- LIGHTBOX (ZOOM FOTOS) ---
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+
+        function openLightbox(src) {
+            lightboxImg.src = src;
+            lightbox.style.display = 'flex';
+        }
+
+        function closeLightbox() {
+            lightbox.style.display = 'none';
+        }
     </script>
 
 <?php else: ?>
@@ -209,6 +282,5 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
 <?php endif; ?>
 
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
