@@ -115,10 +115,38 @@ if (isset($_POST['add'])) {
     $rango_adulto = !empty($_POST['rango_adulto']) ? $_POST['rango_adulto'] : ''; 
     $precio_nino = !empty($_POST['precio_nino']) ? $_POST['precio_nino'] : 0;
     $rango_nino = !empty($_POST['rango_nino']) ? $_POST['rango_nino'] : '';
+    $descripcion = !empty($_POST['descripcion']) ? $_POST['descripcion'] : ''; // NUEVO: Descripción
     
     $slugInput = !empty($_POST['slug']) ? $_POST['slug'] : $nombre;
     $cleanSlug = strtolower(preg_replace('/[^A-Za-z0-9-]+/', '-', iconv('UTF-8', 'ASCII//TRANSLIT', $slugInput)));
     $cleanSlug = trim($cleanSlug, '-');
+    
+    // --- LÓGICA DE IMAGEN ---
+    $imagenPath = '';
+    
+    // 1. Si editamos, recuperamos la imagen anterior por si no suben una nueva
+    if (!empty($_POST['original_slug']) && isset($tours[$_POST['original_slug']]['imagen'])) {
+        $imagenPath = $tours[$_POST['original_slug']]['imagen'];
+    }
+
+    // 2. Si suben nueva imagen, procesarla
+    if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === 0) {
+        $uploadDir = 'img/';
+        // Asegurar que exista la carpeta
+        if (!is_dir($uploadDir)) { mkdir($uploadDir, 0755, true); }
+        
+        $ext = pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION);
+        // Nombre único para evitar caché
+        $filename = $cleanSlug . '-' . time() . '.' . $ext;
+        $targetFile = $uploadDir . $filename;
+        
+        if (move_uploaded_file($_FILES['imagen']['tmp_name'], $targetFile)) {
+            // Si había una imagen anterior diferente, opcionalmente se podría borrar, 
+            // pero por seguridad la reemplazamos en la variable path.
+            $imagenPath = $targetFile;
+        }
+    }
+    // ------------------------
     
     if (!empty($_POST['original_slug']) && $_POST['original_slug'] != $cleanSlug) {
         if(isset($tours[$_POST['original_slug']])) {
@@ -131,7 +159,9 @@ if (isset($_POST['add'])) {
         'precio_cop' => $precio,
         'rango_adulto' => $rango_adulto,
         'precio_nino' => $precio_nino,
-        'rango_nino' => $rango_nino
+        'rango_nino' => $rango_nino,
+        'descripcion' => $descripcion, // Guardar descripción
+        'imagen' => $imagenPath        // Guardar ruta de imagen
     ];
     
     file_put_contents($fileTours, json_encode($tours));
@@ -143,6 +173,11 @@ if (isset($_POST['add'])) {
 if (isset($_GET['delete'])) {
     $slugToDelete = $_GET['delete'];
     if(isset($tours[$slugToDelete])) {
+        // Opcional: Borrar archivo de imagen del servidor para limpiar
+        if (!empty($tours[$slugToDelete]['imagen']) && file_exists($tours[$slugToDelete]['imagen'])) {
+            @unlink($tours[$slugToDelete]['imagen']);
+        }
+        
         unset($tours[$slugToDelete]);
         file_put_contents($fileTours, json_encode($tours));
     }
@@ -184,6 +219,8 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         .table th { background-color: #f1f3f5; border-bottom: 2px solid #dee2e6; }
         
         .btn-action-group { display: flex; gap: 5px; justify-content: flex-end; }
+        .img-preview-mini { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
+        
         @media (max-width: 576px) {
             .btn-action-group { flex-direction: column; }
             .btn-action-group .btn { width: 100%; }
@@ -236,7 +273,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
             <?php endif; ?>
         </div>
         <div class="card-body">
-            <form method="post" class="row g-3" id="tourForm">
+            <form method="post" class="row g-3" id="tourForm" enctype="multipart/form-data">
                 <input type="hidden" name="original_slug" value="<?= $editingSlug ?>">
 
                 <div class="col-12"><h6 class="text-primary border-bottom pb-1 small text-uppercase fw-bold">Información Básica</h6></div>
@@ -250,6 +287,23 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                     <input type="text" name="slug" id="inputSlug" class="form-control bg-light text-muted" placeholder="Auto-generado" value="<?= $editingSlug ?>">
                 </div>
                 
+                <div class="col-md-12">
+                    <label class="form-label small">Foto del Tour</label>
+                    <input type="file" name="imagen" class="form-control" accept="image/*">
+                    <?php if($tourToEdit && !empty($tourToEdit['imagen'])): ?>
+                        <div class="mt-2">
+                            <small class="text-muted">Imagen actual:</small><br>
+                            <img src="<?= $tourToEdit['imagen'] ?>" class="img-preview-mini" style="width:100px; height:auto;">
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label small">Descripción Detallada</label>
+                    <textarea name="descripcion" class="form-control" rows="4" placeholder="Describe los detalles del tour..."><?= $tourToEdit && !empty($tourToEdit['descripcion']) ? htmlspecialchars($tourToEdit['descripcion']) : '' ?></textarea>
+                </div>
+
+                <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small text-uppercase fw-bold">Precios Adultos</h6></div>
+
                 <div class="col-6">
                     <label class="form-label small">Precio Adulto</label>
                     <input type="number" name="precio" class="form-control" required value="<?= $tourToEdit ? $tourToEdit['precio_cop'] : '' ?>">
@@ -259,7 +313,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                     <input type="text" name="rango_adulto" class="form-control" placeholder="Ej: 10+" value="<?= $tourToEdit && isset($tourToEdit['rango_adulto']) ? htmlspecialchars($tourToEdit['rango_adulto']) : '' ?>">
                 </div>
 
-                <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small text-uppercase fw-bold">Información Niños</h6></div>
+                <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small text-uppercase fw-bold">Precios Niños</h6></div>
                 
                 <div class="col-6">
                     <label class="form-label small">Precio Niño</label>
@@ -281,7 +335,8 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
-                    <th class="ps-3">Tour</th>
+                    <th class="ps-3">Img</th>
+                    <th>Tour</th>
                     <th>Precios</th>
                     <th class="text-end pe-3">Acción</th>
                 </tr>
@@ -289,7 +344,14 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
             <tbody>
                 <?php foreach ($tours as $slug => $tour): ?>
                 <tr class="<?= $slug == $editingSlug ? 'table-warning' : '' ?>">
-                    <td class="ps-3">
+                    <td class="ps-3" style="width: 70px;">
+                        <?php if(!empty($tour['imagen'])): ?>
+                            <img src="<?= $tour['imagen'] ?>" class="img-preview-mini">
+                        <?php else: ?>
+                            <div class="img-preview-mini bg-light d-flex align-items-center justify-content-center text-muted border">📷</div>
+                        <?php endif; ?>
+                    </td>
+                    <td>
                         <span class="fw-bold d-block"><?= htmlspecialchars($tour['nombre']) ?></span>
                         <small class="text-muted" style="font-size: 0.75rem;">/<?= $slug ?></small>
                     </td>

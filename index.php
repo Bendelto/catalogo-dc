@@ -85,6 +85,7 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
             background: white;
             transition: transform 0.2s, box-shadow 0.2s;
             height: 100%;
+            overflow: hidden; /* Importante para que la imagen respete el borde redondeado */
         }
         .card-price:hover {
             transform: translateY(-5px);
@@ -92,6 +93,33 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
             color: inherit;
         }
         
+        /* NUEVOS ESTILOS PARA IMÁGENES */
+        .tour-img-list {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .tour-img-detail {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .tour-description {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            white-space: pre-line; /* Respetar saltos de línea */
+            line-height: 1.6;
+            color: #555;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+
         h4, h6 { font-weight: 700; color: #2c3e50; }
         
         .price-usd { color: #198754; font-weight: 700; }
@@ -145,6 +173,16 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
                 <a href="./" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
                 <h4 class="mb-0 lh-sm"><?= htmlspecialchars($singleTour['nombre']) ?></h4>
             </div>
+
+            <?php if(!empty($singleTour['imagen'])): ?>
+                <img src="<?= $singleTour['imagen'] ?>" class="tour-img-detail" alt="<?= htmlspecialchars($singleTour['nombre']) ?>">
+            <?php endif; ?>
+
+            <?php if(!empty($singleTour['descripcion'])): ?>
+                <div class="tour-description">
+                    <?= nl2br(htmlspecialchars($singleTour['descripcion'])) ?>
+                </div>
+            <?php endif; ?>
 
             <div class="card card-price p-4 mb-4" style="cursor: default; transform: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                 <div class="row g-0 text-center mb-2">
@@ -277,29 +315,36 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
         <div class="row g-4">
             <?php foreach ($tours as $slug => $tour): ?>
             <div class="col-12 col-md-6 col-lg-4">
-                <a href="./<?= $slug ?>" class="card card-price p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <h6 class="fw-bold mb-0 text-dark lh-base pe-2"><?= htmlspecialchars($tour['nombre']) ?></h6>
-                    </div>
+                <a href="./<?= $slug ?>" class="card card-price">
                     
-                    <div class="price-cop-highlight mb-3">
-                        $<?= number_format($tour['precio_cop']) ?> <small class="fs-6 text-muted fw-normal">COP</small>
-                        <?php if(!empty($tour['rango_adulto'])): ?>
-                            <div style="font-size: 0.7rem; color: #999; font-weight: normal; margin-top: -5px;">(Adultos <?= $tour['rango_adulto'] ?>)</div>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between align-items-end mt-auto pt-3 border-top">
-                        <div class="d-flex flex-column gap-1">
-                            <div class="price-usd">
-                                <img src="https://flagcdn.com/w40/us.png" class="flag-icon" alt="USA"> USD $<?= precio_inteligente($tour['precio_cop'] / $tasa_tuya_usd) ?>
-                            </div>
-                            <div class="price-brl">
-                                <img src="https://flagcdn.com/w40/br.png" class="flag-icon" alt="Brazil"> BRL R$ <?= precio_inteligente($tour['precio_cop'] / $tasa_tuya_brl) ?>
-                            </div>
+                    <?php if(!empty($tour['imagen'])): ?>
+                        <img src="<?= $tour['imagen'] ?>" class="tour-img-list" alt="<?= htmlspecialchars($tour['nombre']) ?>">
+                    <?php endif; ?>
+
+                    <div class="p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h6 class="fw-bold mb-0 text-dark lh-base pe-2"><?= htmlspecialchars($tour['nombre']) ?></h6>
                         </div>
-                        <div class="text-primary fs-5">
-                            <i class="fa-solid fa-circle-arrow-right"></i>
+                        
+                        <div class="price-cop-highlight mb-3">
+                            $<?= number_format($tour['precio_cop']) ?> <small class="fs-6 text-muted fw-normal">COP</small>
+                            <?php if(!empty($tour['rango_adulto'])): ?>
+                                <div style="font-size: 0.7rem; color: #999; font-weight: normal; margin-top: -5px;">(Adultos <?= $tour['rango_adulto'] ?>)</div>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-end mt-auto pt-3 border-top">
+                            <div class="d-flex flex-column gap-1">
+                                <div class="price-usd">
+                                    <img src="https://flagcdn.com/w40/us.png" class="flag-icon" alt="USA"> USD $<?= precio_inteligente($tour['precio_cop'] / $tasa_tuya_usd) ?>
+                                </div>
+                                <div class="price-brl">
+                                    <img src="https://flagcdn.com/w40/br.png" class="flag-icon" alt="Brazil"> BRL R$ <?= precio_inteligente($tour['precio_cop'] / $tasa_tuya_brl) ?>
+                                </div>
+                            </div>
+                            <div class="text-primary fs-5">
+                                <i class="fa-solid fa-circle-arrow-right"></i>
+                            </div>
                         </div>
                     </div>
                 </a>
