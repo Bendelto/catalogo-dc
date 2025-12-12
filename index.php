@@ -1,52 +1,30 @@
 <?php
-// 1. CARGAR CONFIGURACIÓN
+// CONFIG BASICA
 $fileConfig = 'config.json';
 $config = file_exists($fileConfig) ? json_decode(file_get_contents($fileConfig), true) : ['margen_usd' => 200, 'margen_brl' => 200];
-$margen_usd = $config['margen_usd'];
-$margen_brl = $config['margen_brl'];
+$margen_usd = $config['margen_usd']; $margen_brl = $config['margen_brl'];
 
-// 2. GESTIÓN DE MONEDA Y API
 $cacheFile = 'tasa.json';
-$currentTime = time();
-$cacheTime = 12 * 60 * 60; // 12 horas
-
-if (!file_exists($cacheFile) || ($currentTime - filemtime($cacheFile)) > $cacheTime) {
-    $apiUrl = "https://open.er-api.com/v6/latest/COP";
-    $response = @file_get_contents($apiUrl);
+if (!file_exists($cacheFile) || (time() - filemtime($cacheFile)) > 43200) {
+    $response = @file_get_contents("https://open.er-api.com/v6/latest/COP");
     if($response) file_put_contents($cacheFile, $response);
 }
-
-// 3. CÁLCULO DE TASAS
 $rates = json_decode(file_get_contents($cacheFile), true);
-$tasa_oficial_usd = 1 / $rates['rates']['USD']; 
-$tasa_oficial_brl = 1 / $rates['rates']['BRL'];
-$tasa_tuya_usd = $tasa_oficial_usd - $margen_usd;
-$tasa_tuya_brl = $tasa_oficial_brl - $margen_brl;
+$tasa_tuya_usd = (1 / $rates['rates']['USD']) - $margen_usd;
+$tasa_tuya_brl = (1 / $rates['rates']['BRL']) - $margen_brl;
 
-// FUNCIÓN DE REDONDEO INTELIGENTE
-function precio_inteligente($valor) {
-    $redondeado = ceil($valor * 2) / 2;
-    return (float)$redondeado; 
-}
+function precio_inteligente($valor) { return (float)(ceil($valor * 2) / 2); }
 
-// 4. CARGAR TOURS
 $tours = file_exists('data.json') ? json_decode(file_get_contents('data.json'), true) : [];
+uasort($tours, function($a, $b) { return strcasecmp($a['nombre'], $b['nombre']); });
 
-// ORDENAR ALFABÉTICAMENTE
-uasort($tours, function($a, $b) {
-    return strcasecmp($a['nombre'], $b['nombre']);
-});
-
-// Detectar slug
 $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $base_path = dirname($_SERVER['SCRIPT_NAME']);
 if($base_path == '/') $base_path = '';
 $slug_solicitado = trim(str_replace($base_path, '', $request_uri), '/');
 
 $singleTour = null;
-if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
-    $singleTour = $tours[$slug_solicitado];
-}
+if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $tours[$slug_solicitado];
 ?>
 
 <!DOCTYPE html>
@@ -64,64 +42,37 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
         .calc-container { max-width: 600px; margin: 0 auto; }
         .main-logo { width: 300px; max-width: 85%; height: auto; display: block; margin: 0 auto; }
         
-        /* ESTILOS DE TARJETAS (Listado) */
+        /* TARJETAS LISTADO */
         .card-price { border: 0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; }
         .card-price:hover { transform: translateY(-5px); }
         .tour-img-list { width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid #f0f0f0; }
 
-        /* =========================================
-           ESTILO "ROLLO FOTOGRÁFICO" (REEL) 
-           ========================================= */
-        .gallery-reel-container {
-            width: 100%;
-            overflow-x: auto; 
-            display: flex;
-            gap: 10px;
-            padding-bottom: 10px; 
-            scroll-snap-type: x mandatory; 
-            -webkit-overflow-scrolling: touch; 
-            margin-bottom: 15px;
-        }
+        /* ROLLO FOTOGRÁFICO */
+        .gallery-reel-container { width: 100%; overflow-x: auto; display: flex; gap: 10px; padding-bottom: 10px; scroll-snap-type: x mandatory; margin-bottom: 15px; }
+        .gallery-reel-item { height: 38vh; width: auto; max-width: none; border-radius: 12px; scroll-snap-align: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: zoom-in; background: #fff; }
+        @media (min-width: 768px) { .gallery-reel-item { height: 350px; } }
         
-        .gallery-reel-item {
-            /* AJUSTE DE ALTURA (-30%) */
-            height: 38vh;  /* Antes 55vh */
-            width: auto;  
-            max-width: none; 
-            
-            border-radius: 12px;
-            scroll-snap-align: center; 
-            flex-shrink: 0; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            cursor: zoom-in; 
-            background: #fff; 
-        }
+        /* LIGHTBOX */
+        #lightbox { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; flex-direction: column; }
+        #lightbox img { max-width: 100%; max-height: 90vh; object-fit: contain; }
+        .lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; cursor: pointer; }
 
-        @media (min-width: 768px) {
-            .gallery-reel-item { height: 350px; } /* Antes 500px (PC) */
-        }
-        
-        .gallery-reel-container::-webkit-scrollbar { height: 4px; }
-        .gallery-reel-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        .gallery-reel-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+        /* ACORDEON (MODERNO) */
+        .accordion-button:not(.collapsed) { color: #0d6efd; background-color: #e7f1ff; box-shadow: inset 0 -1px 0 rgba(0,0,0,.125); }
+        .accordion-button:focus { box-shadow: none; border-color: rgba(0,0,0,.125); }
+        .accordion-item { border: 0; border-radius: 12px !important; overflow: hidden; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .list-check li { list-style: none; padding-left: 0; margin-bottom: 8px; font-size: 0.95rem; }
+        .list-check i { margin-right: 8px; }
 
-        /* LIGHTBOX (Zoom) */
-        #lightbox {
-            display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); align-items: center; justify-content: center; flex-direction: column;
-        }
-        #lightbox img { max-width: 100%; max-height: 90vh; object-fit: contain; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; cursor: pointer; z-index: 10000; }
-
-        /* Resto de estilos */
-        .tour-description { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; white-space: pre-line; line-height: 1.6; color: #555; }
+        /* General */
         h4, h6 { font-weight: 700; color: #2c3e50; }
         .price-usd { color: #198754; font-weight: 700; }
         .price-brl { color: #0d6efd; font-weight: 700; }
         .price-cop-highlight { color: #212529; font-weight: 800; font-size: 1.4rem; }
-        .flag-icon { width: 20px; vertical-align: text-bottom; margin-right: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .flag-icon { width: 20px; vertical-align: text-bottom; margin-right: 5px; }
         .badge-tasa { font-size: 0.8rem; background: #fff; border: 1px solid #dee2e6; color: #6c757d; padding: 6px 12px; border-radius: 50px; display: inline-flex; align-items: center; }
         
+        /* Calculadora */
         .calc-box { background-color: #fff; border-radius: 12px; padding: 20px; border: 1px solid #edf2f7; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .form-control-qty { text-align: center; font-weight: bold; background: #f8f9fa; height: 50px; font-size: 1.3rem; }
         .total-display { background-color: #e7f1ff; color: #0d6efd; border: 1px solid #cce5ff; border-radius: 12px; padding: 20px; margin-top: 20px; }
@@ -132,10 +83,7 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
 </head>
 <body class="py-4">
 
-<div id="lightbox" onclick="closeLightbox()">
-    <div class="lightbox-close">&times;</div>
-    <img id="lightbox-img" src="">
-</div>
+<div id="lightbox" onclick="closeLightbox()"><div class="lightbox-close">&times;</div><img id="lightbox-img" src=""></div>
 
 <div class="container main-container">
 <?php if ($singleTour): ?>
@@ -149,26 +97,80 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
         <?php 
             $imagenesParaMostrar = [];
             if(!empty($singleTour['imagen'])) $imagenesParaMostrar[] = $singleTour['imagen'];
-            if(!empty($singleTour['galeria'])) {
-                foreach($singleTour['galeria'] as $gImg) $imagenesParaMostrar[] = $gImg;
-            }
+            if(!empty($singleTour['galeria'])) foreach($singleTour['galeria'] as $gImg) $imagenesParaMostrar[] = $gImg;
         ?>
-
         <?php if(count($imagenesParaMostrar) > 0): ?>
             <div class="gallery-reel-container">
                 <?php foreach($imagenesParaMostrar as $imgSrc): ?>
-                    <img src="<?= $imgSrc ?>" class="gallery-reel-item" onclick="openLightbox('<?= $imgSrc ?>')" alt="Foto Tour">
+                    <img src="<?= $imgSrc ?>" class="gallery-reel-item" onclick="openLightbox('<?= $imgSrc ?>')" alt="Foto">
                 <?php endforeach; ?>
             </div>
-            <div class="text-center text-muted small mb-4" style="font-size:0.75rem;">
-                <i class="fa-solid fa-hand-pointer"></i> Desliza o toca para ampliar
-            </div>
+            <div class="text-center text-muted small mb-4" style="font-size:0.75rem;"><i class="fa-solid fa-hand-pointer"></i> Toca para ampliar</div>
         <?php else: ?>
-            <div class="alert alert-secondary text-center">Sin fotos disponibles</div>
+            <div class="alert alert-secondary text-center mb-4">Sin fotos</div>
         <?php endif; ?>
-        <?php if(!empty($singleTour['descripcion'])): ?>
-            <div class="tour-description"><?= nl2br(htmlspecialchars($singleTour['descripcion'])) ?></div>
-        <?php endif; ?>
+
+        <div class="accordion accordion-flush mb-4" id="accordionTour">
+            
+            <?php if(!empty($singleTour['descripcion'])): ?>
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDesc" aria-expanded="true">
+                        <i class="fa-solid fa-circle-info me-2 text-primary"></i> Descripción
+                    </button>
+                </h2>
+                <div id="collapseDesc" class="accordion-collapse collapse show" data-bs-parent="#accordionTour">
+                    <div class="accordion-body text-muted" style="white-space: pre-line;">
+                        <?= htmlspecialchars($singleTour['descripcion']) ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if(!empty($singleTour['incluye'])): ?>
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInc">
+                        <i class="fa-solid fa-circle-check me-2 text-success"></i> Lo que incluye
+                    </button>
+                </h2>
+                <div id="collapseInc" class="accordion-collapse collapse" data-bs-parent="#accordionTour">
+                    <div class="accordion-body">
+                        <ul class="list-check ps-0 m-0 text-secondary">
+                            <?php 
+                                $items = explode("\n", $singleTour['incluye']);
+                                foreach($items as $item): if(trim($item) == '') continue; 
+                            ?>
+                                <li><i class="fa-solid fa-check text-success"></i> <?= htmlspecialchars($item) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if(!empty($singleTour['no_incluye'])): ?>
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNoInc">
+                        <i class="fa-solid fa-circle-xmark me-2 text-danger"></i> Lo que NO incluye
+                    </button>
+                </h2>
+                <div id="collapseNoInc" class="accordion-collapse collapse" data-bs-parent="#accordionTour">
+                    <div class="accordion-body">
+                        <ul class="list-check ps-0 m-0 text-secondary">
+                            <?php 
+                                $items = explode("\n", $singleTour['no_incluye']);
+                                foreach($items as $item): if(trim($item) == '') continue; 
+                            ?>
+                                <li><i class="fa-solid fa-xmark text-danger"></i> <?= htmlspecialchars($item) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
 
         <div class="card card-price p-4 mb-4">
             <div class="row g-0 text-center mb-2">
@@ -213,6 +215,8 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
         <a href="./" class="btn-solid-blue shadow mb-5">Ver todos los tours</a>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
         const priceAdult = <?= $singleTour['precio_cop'] ?>;
         const priceKid = <?= $singleTour['precio_nino'] ?: 0 ?>;
@@ -233,7 +237,6 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
         inputAdult.addEventListener('input', calc); inputKid.addEventListener('input', calc);
         calc();
 
-        // LIGHTBOX
         const lightbox = document.getElementById('lightbox');
         const lightboxImg = document.getElementById('lightbox-img');
         function openLightbox(src) { lightboxImg.src = src; lightbox.style.display = 'flex'; }
