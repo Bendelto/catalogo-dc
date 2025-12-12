@@ -1,52 +1,30 @@
 <?php
-// 1. CARGAR CONFIGURACIÓN
+// CONFIG BASICA
 $fileConfig = 'config.json';
 $config = file_exists($fileConfig) ? json_decode(file_get_contents($fileConfig), true) : ['margen_usd' => 200, 'margen_brl' => 200];
-$margen_usd = $config['margen_usd'];
-$margen_brl = $config['margen_brl'];
+$margen_usd = $config['margen_usd']; $margen_brl = $config['margen_brl'];
 
-// 2. GESTIÓN DE MONEDA Y API
 $cacheFile = 'tasa.json';
-$currentTime = time();
-$cacheTime = 12 * 60 * 60; // 12 horas
-
-if (!file_exists($cacheFile) || ($currentTime - filemtime($cacheFile)) > $cacheTime) {
-    $apiUrl = "https://open.er-api.com/v6/latest/COP";
-    $response = @file_get_contents($apiUrl);
+if (!file_exists($cacheFile) || (time() - filemtime($cacheFile)) > 43200) {
+    $response = @file_get_contents("https://open.er-api.com/v6/latest/COP");
     if($response) file_put_contents($cacheFile, $response);
 }
-
-// 3. CÁLCULO DE TASAS
 $rates = json_decode(file_get_contents($cacheFile), true);
-$tasa_oficial_usd = 1 / $rates['rates']['USD']; 
-$tasa_oficial_brl = 1 / $rates['rates']['BRL'];
-$tasa_tuya_usd = $tasa_oficial_usd - $margen_usd;
-$tasa_tuya_brl = $tasa_oficial_brl - $margen_brl;
+$tasa_tuya_usd = (1 / $rates['rates']['USD']) - $margen_usd;
+$tasa_tuya_brl = (1 / $rates['rates']['BRL']) - $margen_brl;
 
-// FUNCIÓN DE REDONDEO INTELIGENTE
-function precio_inteligente($valor) {
-    $redondeado = ceil($valor * 2) / 2;
-    return (float)$redondeado; 
-}
+function precio_inteligente($valor) { return (float)(ceil($valor * 2) / 2); }
 
-// 4. CARGAR TOURS
 $tours = file_exists('data.json') ? json_decode(file_get_contents('data.json'), true) : [];
+uasort($tours, function($a, $b) { return strcasecmp($a['nombre'], $b['nombre']); });
 
-// ORDENAR ALFABÉTICAMENTE
-uasort($tours, function($a, $b) {
-    return strcasecmp($a['nombre'], $b['nombre']);
-});
-
-// Detectar slug
 $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $base_path = dirname($_SERVER['SCRIPT_NAME']);
 if($base_path == '/') $base_path = '';
 $slug_solicitado = trim(str_replace($base_path, '', $request_uri), '/');
 
 $singleTour = null;
-if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
-    $singleTour = $tours[$slug_solicitado];
-}
+if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $tours[$slug_solicitado];
 ?>
 
 <!DOCTYPE html>
@@ -79,10 +57,13 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
         #lightbox img { max-width: 100%; max-height: 90vh; object-fit: contain; }
         .lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; cursor: pointer; }
 
-        /* ACORDEON */
-        .accordion-button:not(.collapsed) { color: #0d6efd; background-color: #e7f1ff; }
+        /* ESTILOS INFO (SIN ACORDEON) */
+        .info-box { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .list-check li { list-style: none; padding-left: 0; margin-bottom: 6px; font-size: 0.9rem; }
+        
+        /* ACORDEON (SOLO PARA EXTRAS) */
+        .accordion-button:not(.collapsed) { color: #495057; background-color: #f8f9fa; font-weight: bold; }
         .accordion-item { border: 0; border-radius: 12px !important; overflow: hidden; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .list-check li { list-style: none; padding-left: 0; margin-bottom: 8px; font-size: 0.95rem; }
 
         /* General */
         h4, h6 { font-weight: 700; color: #2c3e50; }
@@ -153,61 +134,68 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
             </div>
         </div>
 
-        <div class="accordion accordion-flush mb-4" id="accordionTour">
-            
+        <div class="info-box">
             <?php if(!empty($singleTour['descripcion'])): ?>
+                <div class="text-secondary mb-4" style="white-space: pre-line; line-height: 1.6;">
+                    <?= htmlspecialchars($singleTour['descripcion']) ?>
+                </div>
+                <hr class="opacity-25 my-4">
+            <?php endif; ?>
+
+            <div class="row g-4">
+                <div class="col-6 border-end">
+                    <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-check text-success"></i> Incluye</h6>
+                    <ul class="list-check ps-0 m-0 text-secondary">
+                        <?php foreach(explode("\n", $singleTour['incluye'] ?? '') as $item): if(trim($item)=='')continue; ?>
+                            <li><i class="fa-solid fa-check text-success"></i> <?= htmlspecialchars($item) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <div class="col-6">
+                    <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-xmark text-danger"></i> No incluye</h6>
+                    <ul class="list-check ps-0 m-0 text-secondary">
+                        <?php foreach(explode("\n", $singleTour['no_incluye'] ?? '') as $item): if(trim($item)=='')continue; ?>
+                            <li><i class="fa-solid fa-xmark text-danger"></i> <?= htmlspecialchars($item) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <?php if(!empty($singleTour['horario']) || !empty($singleTour['punto_encuentro'])): ?>
+        <div class="accordion accordion-flush mb-4" id="accordionExtras">
+            
+            <?php if(!empty($singleTour['horario'])): ?>
             <div class="accordion-item">
                 <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDesc" aria-expanded="true">
-                        <i class="fa-solid fa-circle-info me-2 text-primary"></i> Descripción
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHorario">
+                        <i class="fa-regular fa-clock me-2"></i> Horarios
                     </button>
                 </h2>
-                <div id="collapseDesc" class="accordion-collapse collapse show" data-bs-parent="#accordionTour">
-                    <div class="accordion-body text-muted" style="white-space: pre-line;">
-                        <?= htmlspecialchars($singleTour['descripcion']) ?>
+                <div id="collapseHorario" class="accordion-collapse collapse" data-bs-parent="#accordionExtras">
+                    <div class="accordion-body text-secondary" style="white-space: pre-line;">
+                        <?= htmlspecialchars($singleTour['horario']) ?>
                     </div>
                 </div>
             </div>
             <?php endif; ?>
 
-            <?php if(!empty($singleTour['incluye'])): ?>
+            <?php if(!empty($singleTour['punto_encuentro'])): ?>
             <div class="accordion-item">
                 <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInc">
-                        <i class="fa-solid fa-circle-check me-2 text-success"></i> Lo que incluye
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePunto">
+                        <i class="fa-solid fa-map-location-dot me-2"></i> Punto de Encuentro
                     </button>
                 </h2>
-                <div id="collapseInc" class="accordion-collapse collapse" data-bs-parent="#accordionTour">
-                    <div class="accordion-body">
-                        <ul class="list-check ps-0 m-0 text-secondary">
-                            <?php foreach(explode("\n", $singleTour['incluye']) as $item): if(trim($item)=='')continue; ?>
-                                <li><i class="fa-solid fa-check text-success"></i> <?= htmlspecialchars($item) ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <?php endif; ?>
-
-            <?php if(!empty($singleTour['no_incluye'])): ?>
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNoInc">
-                        <i class="fa-solid fa-circle-xmark me-2 text-danger"></i> Lo que NO incluye
-                    </button>
-                </h2>
-                <div id="collapseNoInc" class="accordion-collapse collapse" data-bs-parent="#accordionTour">
-                    <div class="accordion-body">
-                        <ul class="list-check ps-0 m-0 text-secondary">
-                            <?php foreach(explode("\n", $singleTour['no_incluye']) as $item): if(trim($item)=='')continue; ?>
-                                <li><i class="fa-solid fa-xmark text-danger"></i> <?= htmlspecialchars($item) ?></li>
-                            <?php endforeach; ?>
-                        </ul>
+                <div id="collapsePunto" class="accordion-collapse collapse" data-bs-parent="#accordionExtras">
+                    <div class="accordion-body text-secondary" style="white-space: pre-line;">
+                        <?= htmlspecialchars($singleTour['punto_encuentro']) ?>
                     </div>
                 </div>
             </div>
             <?php endif; ?>
         </div>
+        <?php endif; ?>
 
         <div class="calc-box mb-4">
             <h6 class="fw-bold mb-4 text-center text-secondary"><i class="fa-solid fa-calculator me-2"></i>Calcular Total</h6>

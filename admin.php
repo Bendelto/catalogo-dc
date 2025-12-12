@@ -33,7 +33,7 @@ if (!isset($_SESSION['admin'])) {
 $fileTours = 'data.json';
 $fileConfig = 'config.json';
 
-// --- NUEVO: FUNCIÓN DE DESCARGAR BACKUP ---
+// BACKUP
 if (isset($_GET['backup'])) {
     if (file_exists($fileTours)) {
         $jsonData = file_get_contents($fileTours);
@@ -48,11 +48,10 @@ if (isset($_GET['backup'])) {
         echo $jsonData;
         exit;
     } else {
-        echo "<script>alert('No hay datos para respaldar aún.'); window.location.href='admin.php';</script>";
+        echo "<script>alert('No hay datos para respaldar.'); window.location.href='admin.php';</script>";
         exit;
     }
 }
-// ------------------------------------------
 
 $tours = file_exists($fileTours) ? json_decode(file_get_contents($fileTours), true) : [];
 $config = file_exists($fileConfig) ? json_decode(file_get_contents($fileConfig), true) : ['margen_usd' => 200, 'margen_brl' => 200];
@@ -68,7 +67,9 @@ if (isset($_POST['save_config'])) {
     exit;
 }
 
-// GUARDAR / EDITAR
+// ==========================================
+//      LÓGICA DE GUARDADO (ADD/EDIT)
+// ==========================================
 if (isset($_POST['add'])) {
     $nombre = $_POST['nombre'];
     $precio = $_POST['precio'];
@@ -76,10 +77,14 @@ if (isset($_POST['add'])) {
     $precio_nino = $_POST['precio_nino'] ?? 0;
     $rango_nino = $_POST['rango_nino'] ?? '';
     
-    // Textos
+    // Textos Básicos
     $descripcion = $_POST['descripcion'] ?? '';
     $incluye = $_POST['incluye'] ?? '';
     $no_incluye = $_POST['no_incluye'] ?? '';
+    
+    // NUEVOS CAMPOS
+    $horario = $_POST['horario'] ?? '';
+    $punto_encuentro = $_POST['punto_encuentro'] ?? '';
     
     $slugInput = !empty($_POST['slug']) ? $_POST['slug'] : $nombre;
     $cleanSlug = strtolower(preg_replace('/[^A-Za-z0-9-]+/', '-', iconv('UTF-8', 'ASCII//TRANSLIT', $slugInput)));
@@ -137,6 +142,8 @@ if (isset($_POST['add'])) {
         'descripcion' => $descripcion, 
         'incluye' => $incluye,
         'no_incluye' => $no_incluye,
+        'horario' => $horario,             // Nuevo
+        'punto_encuentro' => $punto_encuentro, // Nuevo
         'imagen' => $imagenPath,       
         'galeria' => $galeriaPaths     
     ];
@@ -233,7 +240,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                 </div>
                 
                 <div class="col-md-6">
-                    <label class="form-label small fw-bold text-primary">📸 Galería (Sumar)</label>
+                    <label class="form-label small fw-bold text-primary">📸 Galería</label>
                     <input type="file" name="galeria[]" class="form-control" accept="image/*" multiple>
                     
                     <?php if($tourToEdit && !empty($tourToEdit['galeria'])): ?>
@@ -251,7 +258,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                     <?php endif; ?>
                 </div>
 
-                <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small text-uppercase fw-bold">Detalles</h6></div>
+                <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small text-uppercase fw-bold">Detalles (Fijos)</h6></div>
 
                 <div class="col-12">
                     <label class="form-label small fw-bold">Descripción General</label>
@@ -259,13 +266,24 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label small fw-bold text-success">✅ Lo que INCLUYE</label>
-                    <textarea name="incluye" class="form-control bg-success bg-opacity-10" rows="5" placeholder="1 ítem por línea"><?= $tourToEdit['incluye'] ?? '' ?></textarea>
+                    <label class="form-label small fw-bold text-success">✅ Incluye (1 por línea)</label>
+                    <textarea name="incluye" class="form-control bg-success bg-opacity-10" rows="5"><?= $tourToEdit['incluye'] ?? '' ?></textarea>
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label small fw-bold text-danger">❌ Lo que NO INCLUYE</label>
-                    <textarea name="no_incluye" class="form-control bg-danger bg-opacity-10" rows="5" placeholder="1 ítem por línea"><?= $tourToEdit['no_incluye'] ?? '' ?></textarea>
+                    <label class="form-label small fw-bold text-danger">❌ No Incluye (1 por línea)</label>
+                    <textarea name="no_incluye" class="form-control bg-danger bg-opacity-10" rows="5"><?= $tourToEdit['no_incluye'] ?? '' ?></textarea>
+                </div>
+
+                <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small text-uppercase fw-bold">Logística (Acordeones)</h6></div>
+                
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">🕒 Horarios / Itinerario</label>
+                    <textarea name="horario" class="form-control" rows="3" placeholder="Ej: Salida 8:00 AM..."><?= $tourToEdit['horario'] ?? '' ?></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">📍 Punto de Encuentro</label>
+                    <textarea name="punto_encuentro" class="form-control" rows="3" placeholder="Ej: Muelle de la Bodeguita..."><?= $tourToEdit['punto_encuentro'] ?? '' ?></textarea>
                 </div>
                 
                 <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small text-uppercase fw-bold">Precios</h6></div>
