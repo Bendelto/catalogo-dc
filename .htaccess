@@ -1,6 +1,6 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /precios/
+    RewriteBase /catalogo/
 
     # 1. Regla para que /admin entre a admin.php
     RewriteRule ^admin/?$ admin.php [L,NC]
