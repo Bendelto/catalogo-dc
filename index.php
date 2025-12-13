@@ -32,16 +32,7 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
     }
 }
 
-// 4. LÓGICA VISUAL (HERO IMAGE)
-// Imagen por defecto para la portada (Playa de Cartagena)
-$defaultHero = "https://images.unsplash.com/photo-1596436889106-be35e843f974?auto=format&fit=crop&w=1200&q=80";
-$heroImage = $defaultHero;
-
-if ($singleTour && !empty($singleTour['imagen'])) {
-    $heroImage = $singleTour['imagen']; // Si es un tour, usa su foto
-}
-
-// 5. VARIABLES DE VISTA
+// 4. VARIABLES DE VISTA
 $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
 $waLink = "";
 
@@ -97,37 +88,35 @@ if ($singleTour) {
     
     <style>
         body { background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #333; padding-bottom: 40px; }
-        .main-container { max-width: 1200px; margin: 0 auto; position: relative; z-index: 2; margin-top: -40px; } /* Sube sobre el hero */
+        .main-container { max-width: 1200px; margin: 0 auto; }
         .calc-container { max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
         
-        /* --- HERO HEADER PARALLAX --- */
-        .hero-header {
-            position: relative;
-            height: 280px;
-            background-image: url('<?= $heroImage ?>');
-            background-size: cover;
-            background-position: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 0 0 30px 30px; /* Curva moderna abajo */
-            overflow: hidden;
+        /* HEADER MINIMALISTA (NUEVO) */
+        .site-header {
+            background-color: #ffffff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04); /* Sombra sutil */
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            text-align: center;
+            margin-bottom: 30px;
         }
-        /* Capa oscura para que el texto resalte */
-        .hero-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6));
+        .main-logo {
+            width: 180px;
+            max-width: 70%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
         }
-        .hero-content { position: relative; z-index: 2; text-align: center; width: 100%; }
-        .main-logo { width: 280px; max-width: 80%; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
 
-        /* --- TARJETAS --- */
-        .card-price { border: 0; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; position: relative; }
+        /* TARJETAS */
+        .card-price { border: 0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; position: relative; }
         .card-price:hover { transform: translateY(-5px); }
         .tour-img-list { width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid #f0f0f0; }
         .badge-oferta { position: absolute; top: 10px; right: 10px; background: #dc3545; color: white; padding: 5px 12px; border-radius: 50px; font-weight: 800; font-size: 0.75rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
-        /* --- GALERÍA & COMPONENTES --- */
+        /* GALERÍA */
         .gallery-reel-container { width: 100%; overflow-x: auto; display: flex; gap: 10px; padding-bottom: 10px; scroll-snap-type: x mandatory; margin-bottom: 15px; }
         .gallery-reel-item { height: 38vh; width: auto; max-width: none; border-radius: 12px; scroll-snap-align: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: zoom-in; background: #fff; }
         @media (min-width: 768px) { .gallery-reel-item { height: 350px; } }
@@ -142,17 +131,23 @@ if ($singleTour) {
         .accordion-item { border: 0; border-radius: 12px !important; overflow: hidden; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .accordion-button:not(.collapsed) { background-color: #f1f8ff; color: #0d6efd; font-weight: 600; }
 
-        /* PRECIOS Y TEXTO */
         h4 { font-weight: 800; color: #1a1a1a; letter-spacing: -0.5px; }
         .price-cop-highlight { color: #1a1a1a; font-weight: 800; font-size: 1.4rem; }
         .price-old { text-decoration: line-through; color: #999; font-size: 0.9rem; font-weight: normal; margin-right: 5px; }
-        .badge-tasa { font-size: 0.8rem; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.5); color: #333; padding: 8px 16px; border-radius: 50px; display: inline-flex; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        /* BANDERAS ARREGLADAS */
+        .flag-icon { width: 22px !important; height: auto; vertical-align: middle; margin-right: 6px; box-shadow: none; flex-shrink: 0; }
+        .badge-tasa { font-size: 0.85rem; background: #fff; border: 1px solid #dee2e6; color: #555; padding: 8px 16px; border-radius: 50px; display: inline-flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        
+        .calc-box { background-color: #fff; border-radius: 12px; padding: 20px; border: 1px solid #edf2f7; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .form-control-qty { text-align: center; font-weight: bold; background: #f8f9fa; height: 50px; font-size: 1.3rem; }
+        .total-display { background-color: #e7f1ff; color: #0d6efd; border: 1px solid #cce5ff; border-radius: 12px; padding: 20px; margin-top: 20px; }
         
         /* BOTONES */
-        .btn-back { background-color: white; color: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .btn-back { background-color: #e9ecef; color: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: bold; transition: transform 0.2s; }
         .btn-back:active { transform: scale(0.9); }
 
-        .btn-share-native { background-color: white; color: #0d6efd; width: 40px; height: 40px; border-radius: 50%; border:none; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; }
+        .btn-share-native { background-color: #f8f9fa; color: #0d6efd; width: 40px; height: 40px; border-radius: 50%; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s; }
         .btn-share-native:active { transform: scale(0.9); }
 
         .btn-whatsapp-desktop { background-color: #25D366; color: white; font-weight: bold; border: none; border-radius: 50px; padding: 14px; text-decoration: none; display: block; text-align: center; transition: background 0.3s; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); }
@@ -166,19 +161,18 @@ if ($singleTour) {
 
         /* BUSCADOR */
         .search-container { max-width: 500px; margin: 0 auto 30px auto; position: relative; }
-        .search-input { width: 100%; padding: 14px 20px 14px 50px; border-radius: 50px; border: 0; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.08); outline: none; transition: all 0.3s; font-size: 1rem; }
-        .search-input:focus { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+        .search-input { width: 100%; padding: 14px 20px 14px 50px; border-radius: 50px; border: 1px solid #eee; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.05); outline: none; transition: all 0.3s; font-size: 1rem; }
+        .search-input:focus { border-color: #0d6efd; box-shadow: 0 8px 20px rgba(13, 110, 253, 0.1); }
         .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #bbb; font-size: 1.1rem; }
     </style>
 </head>
 <body>
 
-<div class="hero-header">
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-        <?php if(!$singleTour): ?>
+<div class="site-header">
+    <div class="container">
+        <a href="./">
             <img src="logo.svg" alt="Descubre Cartagena" class="main-logo">
-        <?php endif; ?>
+        </a>
     </div>
 </div>
 
@@ -368,7 +362,6 @@ if ($singleTour) {
         function openLightbox(src) { lightboxImg.src = src; lightbox.style.display = 'flex'; }
         function closeLightbox() { lightbox.style.display = 'none'; }
 
-        // COMPARTIR NATIVO
         function shareNative() {
             if (navigator.share) {
                 navigator.share({
@@ -377,7 +370,6 @@ if ($singleTour) {
                     url: window.location.href
                 }).catch(console.error);
             } else {
-                // Fallback PC: Copiar al portapapeles
                 navigator.clipboard.writeText(window.location.href).then(function() {
                     alert("¡Enlace copiado! Compártelo con tus amigos.");
                 });
