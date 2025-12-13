@@ -42,30 +42,24 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
         .calc-container { max-width: 600px; margin: 0 auto; }
         .main-logo { width: 300px; max-width: 85%; height: auto; display: block; margin: 0 auto; }
         
-        /* TARJETAS LISTADO */
         .card-price { border: 0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; }
         .card-price:hover { transform: translateY(-5px); }
         .tour-img-list { width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid #f0f0f0; }
 
-        /* ROLLO FOTOGRÁFICO */
         .gallery-reel-container { width: 100%; overflow-x: auto; display: flex; gap: 10px; padding-bottom: 10px; scroll-snap-type: x mandatory; margin-bottom: 15px; }
         .gallery-reel-item { height: 38vh; width: auto; max-width: none; border-radius: 12px; scroll-snap-align: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: zoom-in; background: #fff; }
         @media (min-width: 768px) { .gallery-reel-item { height: 350px; } }
         
-        /* LIGHTBOX */
         #lightbox { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; flex-direction: column; }
         #lightbox img { max-width: 100%; max-height: 90vh; object-fit: contain; }
         .lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; cursor: pointer; }
 
-        /* ESTILOS INFO (SIN ACORDEON) */
         .info-box { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .list-check li { list-style: none; padding-left: 0; margin-bottom: 6px; font-size: 0.95rem; }
         
-        /* ACORDEON (SOLO PARA EXTRAS) */
         .accordion-button:not(.collapsed) { color: #495057; background-color: #f8f9fa; font-weight: bold; }
         .accordion-item { border: 0; border-radius: 12px !important; overflow: hidden; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
 
-        /* General */
         h4, h6 { font-weight: 700; color: #2c3e50; }
         .price-usd { color: #198754; font-weight: 700; }
         .price-brl { color: #0d6efd; font-weight: 700; }
@@ -73,7 +67,6 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
         .flag-icon { width: 20px; vertical-align: text-bottom; margin-right: 5px; }
         .badge-tasa { font-size: 0.8rem; background: #fff; border: 1px solid #dee2e6; color: #6c757d; padding: 6px 12px; border-radius: 50px; display: inline-flex; align-items: center; }
         
-        /* Calculadora */
         .calc-box { background-color: #fff; border-radius: 12px; padding: 20px; border: 1px solid #edf2f7; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .form-control-qty { text-align: center; font-weight: bold; background: #f8f9fa; height: 50px; font-size: 1.3rem; }
         .total-display { background-color: #e7f1ff; color: #0d6efd; border: 1px solid #cce5ff; border-radius: 12px; padding: 20px; margin-top: 20px; }
@@ -143,14 +136,16 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
             <?php endif; ?>
 
             <div class="row g-4">
-                <div class="col-12 col-md-6"> <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-check text-success"></i> Incluye</h6>
+                <div class="col-12 col-md-6 border-bottom border-md-0 pb-3 pb-md-0">
+                    <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-check text-success"></i> Incluye</h6>
                     <ul class="list-check ps-0 m-0 text-secondary">
                         <?php foreach(explode("\n", $singleTour['incluye'] ?? '') as $item): if(trim($item)=='')continue; ?>
                             <li><i class="fa-solid fa-check text-success"></i> <?= htmlspecialchars($item) ?></li>
                         <?php endforeach; ?>
                     </ul>
                 </div>
-                <div class="col-12 col-md-6"> <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-xmark text-danger"></i> No incluye</h6>
+                <div class="col-12 col-md-6">
+                    <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-xmark text-danger"></i> No incluye</h6>
                     <ul class="list-check ps-0 m-0 text-secondary">
                         <?php foreach(explode("\n", $singleTour['no_incluye'] ?? '') as $item): if(trim($item)=='')continue; ?>
                             <li><i class="fa-solid fa-xmark text-danger"></i> <?= htmlspecialchars($item) ?></li>

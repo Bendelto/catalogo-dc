@@ -29,7 +29,7 @@ if (!isset($_SESSION['admin'])) {
     <?php exit;
 }
 
-// 3. GESTIÓN DE DATOS Y BACKUP
+// 3. GESTIÓN DE DATOS
 $fileTours = 'data.json';
 $fileConfig = 'config.json';
 
@@ -46,9 +46,6 @@ if (isset($_GET['backup'])) {
         header('Pragma: public');
         header('Content-Length: ' . strlen($jsonData));
         echo $jsonData;
-        exit;
-    } else {
-        echo "<script>alert('No hay datos para respaldar.'); window.location.href='admin.php';</script>";
         exit;
     }
 }
@@ -71,27 +68,27 @@ if (isset($_POST['save_config'])) {
 //      LÓGICA DE GUARDADO (ADD/EDIT)
 // ==========================================
 if (isset($_POST['add'])) {
-    $nombre = $_POST['nombre'];
-    $precio = $_POST['precio'];
+    // Recibir variables asegurando que no sean null
+    $nombre = $_POST['nombre'] ?? 'Sin nombre';
+    $precio = $_POST['precio'] ?? 0;
     $rango_adulto = $_POST['rango_adulto'] ?? ''; 
     $precio_nino = $_POST['precio_nino'] ?? 0;
     $rango_nino = $_POST['rango_nino'] ?? '';
     
-    // Textos Básicos
-    $descripcion = $_POST['descripcion'] ?? '';
-    $incluye = $_POST['incluye'] ?? '';
-    $no_incluye = $_POST['no_incluye'] ?? '';
+    // TEXTOS LARGOS (Aquí estaba el posible error de guardado)
+    $descripcion = isset($_POST['descripcion']) ? $_POST['descripcion'] : '';
+    $incluye = isset($_POST['incluye']) ? $_POST['incluye'] : '';
+    $no_incluye = isset($_POST['no_incluye']) ? $_POST['no_incluye'] : '';
+    $horario = isset($_POST['horario']) ? $_POST['horario'] : '';
+    $punto_encuentro = isset($_POST['punto_encuentro']) ? $_POST['punto_encuentro'] : '';
     
-    // NUEVOS CAMPOS
-    $horario = $_POST['horario'] ?? '';
-    $punto_encuentro = $_POST['punto_encuentro'] ?? '';
-    
+    // Slug
     $slugInput = !empty($_POST['slug']) ? $_POST['slug'] : $nombre;
     $cleanSlug = strtolower(preg_replace('/[^A-Za-z0-9-]+/', '-', iconv('UTF-8', 'ASCII//TRANSLIT', $slugInput)));
     $cleanSlug = trim($cleanSlug, '-');
     $originalSlug = $_POST['original_slug'] ?? '';
     
-    // IMAGEN PORTADA
+    // 1. IMAGEN PORTADA (Conservar anterior si no hay nueva)
     $imagenPath = ''; 
     if (!empty($originalSlug) && isset($tours[$originalSlug]['imagen'])) {
         $imagenPath = $tours[$originalSlug]['imagen'];
@@ -106,7 +103,7 @@ if (isset($_POST['add'])) {
         }
     }
 
-    // GALERÍA
+    // 2. GALERÍA (Sumar fotos)
     $galeriaPaths = [];
     if (!empty($originalSlug) && isset($tours[$originalSlug]['galeria'])) {
         $galeriaPaths = $tours[$originalSlug]['galeria'];
@@ -129,10 +126,12 @@ if (isset($_POST['add'])) {
         $galeriaPaths = [];
     }
 
+    // 3. Limpiar slug viejo si cambió
     if (!empty($originalSlug) && $originalSlug != $cleanSlug) {
         if(isset($tours[$originalSlug])) unset($tours[$originalSlug]);
     }
 
+    // 4. CONSTRUIR ARRAY
     $tours[$cleanSlug] = [
         'nombre' => $nombre, 
         'precio_cop' => $precio,
@@ -148,7 +147,9 @@ if (isset($_POST['add'])) {
         'galeria' => $galeriaPaths     
     ];
     
-    file_put_contents($fileTours, json_encode($tours));
+    // 5. GUARDAR (Con soporte UNICODE para tildes/ñ)
+    file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    
     header("Location: admin.php");
     exit;
 }
@@ -158,7 +159,7 @@ if (isset($_GET['delete'])) {
     $slugToDelete = $_GET['delete'];
     if(isset($tours[$slugToDelete])) {
         unset($tours[$slugToDelete]);
-        file_put_contents($fileTours, json_encode($tours));
+        file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     }
     header("Location: admin.php");
     exit;
@@ -240,7 +241,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                 </div>
                 
                 <div class="col-md-6">
-                    <label class="form-label small fw-bold text-primary">📸 Galería</label>
+                    <label class="form-label small fw-bold text-primary">📸 Galería (Sumar)</label>
                     <input type="file" name="galeria[]" class="form-control" accept="image/*" multiple>
                     
                     <?php if($tourToEdit && !empty($tourToEdit['galeria'])): ?>
@@ -262,28 +263,28 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
 
                 <div class="col-12">
                     <label class="form-label small fw-bold">Descripción General</label>
-                    <textarea name="descripcion" class="form-control" rows="3"><?= $tourToEdit['descripcion'] ?? '' ?></textarea>
+                    <textarea name="descripcion" class="form-control" rows="3"><?= htmlspecialchars($tourToEdit['descripcion'] ?? '') ?></textarea>
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label small fw-bold text-success">✅ Incluye</label>
-                    <textarea name="incluye" class="form-control bg-success bg-opacity-10" rows="5" placeholder="1 ítem por línea"><?= $tourToEdit['incluye'] ?? '' ?></textarea>
+                    <label class="form-label small fw-bold text-success">✅ Incluye (1 por línea)</label>
+                    <textarea name="incluye" class="form-control bg-success bg-opacity-10" rows="5"><?= htmlspecialchars($tourToEdit['incluye'] ?? '') ?></textarea>
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label small fw-bold text-danger">❌ No Incluye</label>
-                    <textarea name="no_incluye" class="form-control bg-danger bg-opacity-10" rows="5" placeholder="1 ítem por línea"><?= $tourToEdit['no_incluye'] ?? '' ?></textarea>
+                    <label class="form-label small fw-bold text-danger">❌ No Incluye (1 por línea)</label>
+                    <textarea name="no_incluye" class="form-control bg-danger bg-opacity-10" rows="5"><?= htmlspecialchars($tourToEdit['no_incluye'] ?? '') ?></textarea>
                 </div>
 
                 <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small text-uppercase fw-bold">Logística (Acordeones)</h6></div>
                 
                 <div class="col-md-6">
                     <label class="form-label small fw-bold">🕒 Horarios / Itinerario</label>
-                    <textarea name="horario" class="form-control" rows="3" placeholder="Ej: Salida 8:00 AM..."><?= $tourToEdit['horario'] ?? '' ?></textarea>
+                    <textarea name="horario" class="form-control" rows="3" placeholder="Ej: Salida 8:00 AM..."><?= htmlspecialchars($tourToEdit['horario'] ?? '') ?></textarea>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label small fw-bold">📍 Punto de Encuentro</label>
-                    <textarea name="punto_encuentro" class="form-control" rows="3" placeholder="Ej: Muelle de la Bodeguita..."><?= $tourToEdit['punto_encuentro'] ?? '' ?></textarea>
+                    <textarea name="punto_encuentro" class="form-control" rows="3" placeholder="Ej: Muelle de la Bodeguita..."><?= htmlspecialchars($tourToEdit['punto_encuentro'] ?? '') ?></textarea>
                 </div>
                 
                 <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small text-uppercase fw-bold">Precios</h6></div>
