@@ -59,7 +59,7 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
 
         /* ESTILOS INFO (SIN ACORDEON) */
         .info-box { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .list-check li { list-style: none; padding-left: 0; margin-bottom: 6px; font-size: 0.9rem; }
+        .list-check li { list-style: none; padding-left: 0; margin-bottom: 6px; font-size: 0.95rem; }
         
         /* ACORDEON (SOLO PARA EXTRAS) */
         .accordion-button:not(.collapsed) { color: #495057; background-color: #f8f9fa; font-weight: bold; }
@@ -143,16 +143,14 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
             <?php endif; ?>
 
             <div class="row g-4">
-                <div class="col-6 border-end">
-                    <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-check text-success"></i> Incluye</h6>
+                <div class="col-12 col-md-6"> <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-check text-success"></i> Incluye</h6>
                     <ul class="list-check ps-0 m-0 text-secondary">
                         <?php foreach(explode("\n", $singleTour['incluye'] ?? '') as $item): if(trim($item)=='')continue; ?>
                             <li><i class="fa-solid fa-check text-success"></i> <?= htmlspecialchars($item) ?></li>
                         <?php endforeach; ?>
                     </ul>
                 </div>
-                <div class="col-6">
-                    <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-xmark text-danger"></i> No incluye</h6>
+                <div class="col-12 col-md-6"> <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-xmark text-danger"></i> No incluye</h6>
                     <ul class="list-check ps-0 m-0 text-secondary">
                         <?php foreach(explode("\n", $singleTour['no_incluye'] ?? '') as $item): if(trim($item)=='')continue; ?>
                             <li><i class="fa-solid fa-xmark text-danger"></i> <?= htmlspecialchars($item) ?></li>
