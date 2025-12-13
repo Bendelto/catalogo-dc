@@ -30,8 +30,14 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
     }
 }
 
-// --- PREPARAR DATOS Y ENLACE WHATSAPP ---
+// --- DATOS Y SEO ---
+$metaTitle = "Descubre Cartagena - Tours y Experiencias";
+$metaDesc = "Reserva los mejores tours en Cartagena de Indias al mejor precio.";
+$metaImage = ""; // Dejar vacío o poner URL de logo por defecto
+$currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+
 $waLink = "";
+
 if ($singleTour) {
     $desc = $singleTour['descripcion'] ?? $singleTour['description'] ?? '';
     $inc = $singleTour['incluye'] ?? $singleTour['include'] ?? '';
@@ -39,14 +45,18 @@ if ($singleTour) {
     $horario = $singleTour['horario'] ?? $singleTour['schedule'] ?? '';
     $punto = $singleTour['punto_encuentro'] ?? $singleTour['meeting_point'] ?? '';
 
-    // Construcción del mensaje de WhatsApp
-    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
-    $currentUrl = $protocol . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-    
+    // SEO ESPECÍFICO
+    $metaTitle = $singleTour['nombre'] . " - Descubre Cartagena";
+    if(!empty($desc)) $metaDesc = substr(strip_tags($desc), 0, 150) . "...";
+    if(!empty($singleTour['imagen'])) {
+        $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
+        $metaImage = $protocol . "://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']) . "/" . $singleTour['imagen'];
+    }
+
+    // WHATSAPP
     $mensaje  = "Hola Descubre Cartagena, me gustaría reservar: \n\n";
     $mensaje .= "📍 *" . $singleTour['nombre'] . "*\n";
     $mensaje .= "🔗 " . $currentUrl;
-    
     $waLink = "https://wa.me/573205899997?text=" . urlencode($mensaje);
 }
 ?>
@@ -56,7 +66,22 @@ if ($singleTour) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title><?= $singleTour ? $singleTour['nombre'] : 'Lista de Precios' ?></title>
+    
+    <title><?= htmlspecialchars($metaTitle) ?></title>
+    <meta name="description" content="<?= htmlspecialchars($metaDesc) ?>">
+    
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="<?= $currentUrl ?>">
+    <meta property="og:title" content="<?= htmlspecialchars($metaTitle) ?>">
+    <meta property="og:description" content="<?= htmlspecialchars($metaDesc) ?>">
+    <?php if($metaImage): ?><meta property="og:image" content="<?= $metaImage ?>"><?php endif; ?>
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="<?= $currentUrl ?>">
+    <meta property="twitter:title" content="<?= htmlspecialchars($metaTitle) ?>">
+    <meta property="twitter:description" content="<?= htmlspecialchars($metaDesc) ?>">
+    <?php if($metaImage): ?><meta property="twitter:image" content="<?= $metaImage ?>"><?php endif; ?>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -66,9 +91,12 @@ if ($singleTour) {
         .calc-container { max-width: 600px; margin: 0 auto; }
         .main-logo { width: 300px; max-width: 85%; height: auto; display: block; margin: 0 auto; }
         
-        .card-price { border: 0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; }
+        .card-price { border: 0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; position: relative; }
         .card-price:hover { transform: translateY(-5px); }
         .tour-img-list { width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid #f0f0f0; }
+
+        /* BADGE OFERTA */
+        .badge-oferta { position: absolute; top: 10px; right: 10px; background: #dc3545; color: white; padding: 5px 10px; border-radius: 50px; font-weight: bold; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
         .gallery-reel-container { width: 100%; overflow-x: auto; display: flex; gap: 10px; padding-bottom: 10px; scroll-snap-type: x mandatory; margin-bottom: 15px; }
         .gallery-reel-item { height: 38vh; width: auto; max-width: none; border-radius: 12px; scroll-snap-align: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: zoom-in; background: #fff; }
@@ -88,6 +116,8 @@ if ($singleTour) {
         .price-usd { color: #198754; font-weight: 700; }
         .price-brl { color: #0d6efd; font-weight: 700; }
         .price-cop-highlight { color: #212529; font-weight: 800; font-size: 1.4rem; }
+        .price-old { text-decoration: line-through; color: #999; font-size: 0.9rem; font-weight: normal; margin-right: 5px; }
+        
         .flag-icon { width: 20px; vertical-align: text-bottom; margin-right: 5px; }
         .badge-tasa { font-size: 0.8rem; background: #fff; border: 1px solid #dee2e6; color: #6c757d; padding: 6px 12px; border-radius: 50px; display: inline-flex; align-items: center; }
         
@@ -99,23 +129,17 @@ if ($singleTour) {
         .btn-back { background-color: #e9ecef; color: #212529; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: bold; }
         .currency-tag { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; opacity: 0.8; }
 
-        /* --- BOTONES WHATSAPP --- */
-        .btn-whatsapp-desktop {
-            background-color: #25D366; color: white; font-weight: bold; border: none;
-            border-radius: 50px; padding: 12px; text-decoration: none; display: block; text-align: center;
-            transition: background 0.3s;
-        }
+        /* WHATSAPP */
+        .btn-whatsapp-desktop { background-color: #25D366; color: white; font-weight: bold; border: none; border-radius: 50px; padding: 12px; text-decoration: none; display: block; text-align: center; transition: background 0.3s; }
         .btn-whatsapp-desktop:hover { background-color: #1ebc57; color: white; }
-
-        .btn-whatsapp-mobile {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 1050; background-color: #25D366; color: white;
-            padding: 12px 25px; border-radius: 50px;
-            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
-            font-weight: bold; text-decoration: none; display: flex; align-items: center; gap: 8px;
-            white-space: nowrap;
-        }
+        .btn-whatsapp-mobile { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1050; background-color: #25D366; color: white; padding: 12px 25px; border-radius: 50px; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); font-weight: bold; text-decoration: none; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
         .btn-whatsapp-mobile:hover { color: white; }
+
+        /* SEARCH BAR */
+        .search-container { max-width: 500px; margin: 0 auto 30px auto; position: relative; }
+        .search-input { width: 100%; padding: 12px 20px 12px 45px; border-radius: 50px; border: 1px solid #ddd; box-shadow: 0 2px 10px rgba(0,0,0,0.05); outline: none; transition: all 0.3s; }
+        .search-input:focus { border-color: #0d6efd; box-shadow: 0 4px 15px rgba(13, 110, 253, 0.15); }
+        .search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #999; }
     </style>
 </head>
 <body class="py-4">
@@ -124,7 +148,9 @@ if ($singleTour) {
 
 <div class="container main-container">
 <?php if ($singleTour): ?>
-    <div class="calc-container" style="padding-bottom: 80px;"> <div class="d-flex align-items-center gap-3 mb-4">
+    <div class="calc-container" style="padding-bottom: 80px;">
+        
+        <div class="d-flex align-items-center gap-3 mb-4">
             <a href="./" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
             <h4 class="mb-0 lh-sm"><?= htmlspecialchars($singleTour['nombre']) ?></h4>
         </div>
@@ -147,7 +173,12 @@ if ($singleTour) {
             <div class="row g-0 text-center">
                 <div class="col-6 border-end pe-2">
                     <span class="text-uppercase text-muted fw-bold" style="font-size:0.7rem;">Adulto <small class="fw-normal">(<?= $singleTour['rango_adulto'] ?? '' ?>)</small></span>
-                    <div class="price-cop-highlight my-1">$<?= number_format($singleTour['precio_cop']) ?></div>
+                    <div class="price-cop-highlight my-1">
+                        <?php if(!empty($singleTour['precio_antes']) && $singleTour['precio_antes'] > $singleTour['precio_cop']): ?>
+                            <span class="price-old">$<?= number_format($singleTour['precio_antes']) ?></span>
+                        <?php endif; ?>
+                        $<?= number_format($singleTour['precio_cop']) ?>
+                    </div>
                     <div class="d-flex flex-column gap-1">
                         <span class="price-usd small"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($singleTour['precio_cop'] / $tasa_tuya_usd) ?></span>
                         <span class="price-brl small"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$<?= precio_inteligente($singleTour['precio_cop'] / $tasa_tuya_brl) ?></span>
@@ -305,24 +336,40 @@ if ($singleTour) {
 <?php else: ?>
     <div class="text-center mb-5 pt-3">
         <img src="logo.svg" alt="Descubre Cartagena" class="main-logo mb-3">
+        
+        <div class="search-container">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="searchTour" class="search-input" placeholder="Buscar tour, isla, plan...">
+        </div>
+
         <div class="d-flex justify-content-center gap-3 mt-3 flex-wrap">
             <span class="badge-tasa"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"><span class="fw-bold text-success">USD</span> $<?= number_format($tasa_tuya_usd, 0) ?></span>
             <span class="badge-tasa"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"><span class="fw-bold text-primary">BRL</span> $<?= number_format($tasa_tuya_brl, 0) ?></span>
         </div>
         <small class="text-muted d-block mt-2" style="font-size: 0.7rem;">* Tasas calculadas con margen de cambio local</small>
     </div>
-    <div class="row g-4">
+    
+    <div class="row g-4" id="toursGrid">
         <?php foreach ($tours as $slug => $tour): 
-            // FILTRO DE OCULTOS
             if(!empty($tour['oculto']) && $tour['oculto'] == true) continue;
         ?>
-        <div class="col-12 col-md-6 col-lg-4">
+        <div class="col-12 col-md-6 col-lg-4 tour-card-col">
             <a href="./<?= $slug ?>" class="card card-price">
                 <?php if(!empty($tour['imagen'])): ?><img src="<?= $tour['imagen'] ?>" class="tour-img-list"><?php endif; ?>
+                
+                <?php if(!empty($tour['precio_antes']) && $tour['precio_antes'] > $tour['precio_cop']): ?>
+                    <span class="badge-oferta">OFERTA</span>
+                <?php endif; ?>
+
                 <div class="p-4">
-                    <h6 class="fw-bold mb-3 text-dark lh-base"><?= htmlspecialchars($tour['nombre']) ?></h6>
-                    <div class="price-cop-highlight mb-3">$<?= number_format($tour['precio_cop']) ?> <small class="fs-6 text-muted fw-normal">COP</small>
-                    <?php if(!empty($tour['rango_adulto'])): ?><div style="font-size:0.7rem;color:#999;font-weight:normal">(Adultos <?= $tour['rango_adulto'] ?>)</div><?php endif; ?></div>
+                    <h6 class="fw-bold mb-3 text-dark lh-base tour-title"><?= htmlspecialchars($tour['nombre']) ?></h6>
+                    <div class="price-cop-highlight mb-3">
+                        <?php if(!empty($tour['precio_antes']) && $tour['precio_antes'] > $tour['precio_cop']): ?>
+                            <span class="price-old">$<?= number_format($tour['precio_antes']) ?></span>
+                        <?php endif; ?>
+                        $<?= number_format($tour['precio_cop']) ?> <small class="fs-6 text-muted fw-normal">COP</small>
+                        <?php if(!empty($tour['rango_adulto'])): ?><div style="font-size:0.7rem;color:#999;font-weight:normal">(Adultos <?= $tour['rango_adulto'] ?>)</div><?php endif; ?>
+                    </div>
                     <div class="d-flex justify-content-between align-items-end mt-auto pt-3 border-top">
                         <div class="d-flex flex-column gap-1">
                             <div class="price-usd"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($tour['precio_cop'] / $tasa_tuya_usd) ?></div>
@@ -335,6 +382,22 @@ if ($singleTour) {
         </div>
         <?php endforeach; ?>
     </div>
+
+    <script>
+        document.getElementById('searchTour').addEventListener('keyup', function() {
+            let filter = this.value.toLowerCase();
+            let cards = document.querySelectorAll('.tour-card-col');
+            
+            cards.forEach(function(card) {
+                let title = card.querySelector('.tour-title').textContent.toLowerCase();
+                if (title.indexOf(filter) > -1) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
 <?php endif; ?>
 
 </div>

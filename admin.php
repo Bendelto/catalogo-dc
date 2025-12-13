@@ -25,11 +25,11 @@ if (isset($_POST['login'])) {
 
 if (!isset($_SESSION['admin'])) {
     ?>
-    <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Login</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head><body class="d-flex justify-content-center align-items-center vh-100 px-3 bg-light"><form method="post" class="card p-4 shadow" style="max-width:400px;width:100%"><h3 class="text-center mb-3">Admin</h3><?php if($errorMsg): ?><div class="alert alert-danger py-1"><?= $errorMsg ?></div><?php endif; ?><input type="text" name="user" class="form-control mb-3" placeholder="Usuario" required autofocus><input type="password" name="pass" class="form-control mb-3" placeholder="Contraseña" required><button name="login" class="btn btn-primary w-100">Entrar</button></form></body></html>
+    <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Login</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head><body class="d-flex justify-content-center align-items-center vh-100 px-3 bg-light"><form method="post" class="card p-4 shadow" style="max-width:400px;width:100%"><h3 class="text-center mb-3">🔐 Admin</h3><?php if($errorMsg): ?><div class="alert alert-danger py-1"><?= $errorMsg ?></div><?php endif; ?><input type="text" name="user" class="form-control mb-3" placeholder="Usuario" required autofocus><input type="password" name="pass" class="form-control mb-3" placeholder="Contraseña" required><button name="login" class="btn btn-primary w-100">Entrar</button></form></body></html>
     <?php exit;
 }
 
-// 3. DATOS
+// 3. DATOS Y BACKUP
 $fileTours = 'data.json';
 $fileConfig = 'config.json';
 
@@ -71,7 +71,9 @@ if (isset($_GET['toggle_hide'])) {
     exit;
 }
 
-// GUARDADO (ADD/EDIT)
+// ==========================================
+//      LÓGICA DE GUARDADO (ADD/EDIT)
+// ==========================================
 if (isset($_POST['add'])) {
     $nombre = $_POST['nombre'] ?? 'Sin nombre';
     $slugInput = !empty($_POST['slug']) ? $_POST['slug'] : $nombre;
@@ -79,6 +81,7 @@ if (isset($_POST['add'])) {
     $cleanSlug = trim($cleanSlug, '-');
     $originalSlug = $_POST['original_slug'] ?? '';
 
+    // RECUPERAR DATOS ANTERIORES
     $datosAnteriores = [];
     if (!empty($originalSlug) && isset($tours[$originalSlug])) {
         $datosAnteriores = $tours[$originalSlug];
@@ -86,9 +89,20 @@ if (isset($_POST['add'])) {
         $datosAnteriores = $tours[$cleanSlug];
     }
 
+    // GESTIÓN DE GALERÍA (Borrado Individual)
+    $galeriaActual = $datosAnteriores['galeria'] ?? [];
+    
+    // Si se marcaron fotos para borrar, las quitamos del array
+    if (isset($_POST['delete_imgs']) && is_array($_POST['delete_imgs'])) {
+        $galeriaActual = array_diff($galeriaActual, $_POST['delete_imgs']);
+        $galeriaActual = array_values($galeriaActual); // Reindexar para evitar huecos en el JSON
+    }
+
+    // PREPARAR DATOS NUEVOS
     $nuevosDatos = [
         'nombre' => $nombre,
         'precio_cop' => $_POST['precio'] ?? 0,
+        'precio_antes' => $_POST['precio_antes'] ?? 0, // NUEVO: PRECIO OFERTA
         'rango_adulto' => $_POST['rango_adulto'] ?? '',
         'precio_nino' => $_POST['precio_nino'] ?? 0,
         'rango_nino' => $_POST['rango_nino'] ?? '',
@@ -97,12 +111,12 @@ if (isset($_POST['add'])) {
         'no_incluye' => $_POST['no_incluye'] ?? '',
         'horario' => $_POST['horario'] ?? '',
         'punto_encuentro' => $_POST['punto_encuentro'] ?? '',
-        'imagen' => $datosAnteriores['imagen'] ?? '',
-        'galeria' => $datosAnteriores['galeria'] ?? [],
+        'imagen' => $datosAnteriores['imagen'] ?? '', 
+        'galeria' => $galeriaActual, // Usamos la galería filtrada
         'oculto' => $datosAnteriores['oculto'] ?? false
     ];
 
-    // PORTADA
+    // PROCESAR PORTADA
     if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === 0) {
         $uploadDir = 'img/';
         if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
@@ -113,7 +127,7 @@ if (isset($_POST['add'])) {
         }
     }
 
-    // GALERÍA
+    // PROCESAR GALERÍA (NUEVAS FOTOS)
     if (isset($_FILES['galeria'])) {
         $uploadDir = 'img/';
         if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
@@ -128,14 +142,13 @@ if (isset($_POST['add'])) {
             }
         }
     }
-    if (isset($_POST['borrar_galeria']) && $_POST['borrar_galeria'] == '1') {
-        $nuevosDatos['galeria'] = [];
-    }
 
+    // Eliminar entrada vieja si cambió el slug
     if (!empty($originalSlug) && $originalSlug != $cleanSlug) {
         if(isset($tours[$originalSlug])) unset($tours[$originalSlug]);
     }
-
+    
+    // FUSIÓN Y GUARDADO
     $tours[$cleanSlug] = array_merge($datosAnteriores, $nuevosDatos);
     
     file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
@@ -166,6 +179,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
     $tourToEdit = [
         'nombre' => $d['nombre'] ?? '',
         'precio_cop' => $d['precio_cop'] ?? '',
+        'precio_antes' => $d['precio_antes'] ?? '', // Cargar precio oferta
         'rango_adulto' => $d['rango_adulto'] ?? '',
         'precio_nino' => $d['precio_nino'] ?? '',
         'rango_nino' => $d['rango_nino'] ?? '',
@@ -190,7 +204,8 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
     <style>
         body { padding-bottom: 50px; background-color: #f8f9fa; }
         .img-preview-mini { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
-        .gallery-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin-right: 2px; }
+        .gallery-thumb-container { display: inline-block; margin: 5px; text-align: center; background: white; padding: 5px; border-radius: 6px; border: 1px solid #ddd; }
+        .gallery-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; display: block; margin-bottom: 3px; }
         .btn-group-action { display: flex; gap: 5px; justify-content: flex-end; }
         @media (max-width: 576px) { .btn-group-action { flex-direction: column; } .btn-group-action .btn { width: 100%; } }
         .row-hidden { background-color: #e9ecef; opacity: 0.75; }
@@ -221,7 +236,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
 
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-primary text-white">
-            <span class="fw-bold"><?= $tourToEdit ? 'Editando' : 'Nuevo' ?></span>
+            <span class="fw-bold"><?= $tourToEdit ? '✏️ Editando' : '➕ Nuevo' ?></span>
             <?php if($tourToEdit): ?><a href="admin.php" class="btn btn-sm btn-light float-end py-0">Cancelar</a><?php endif; ?>
         </div>
         <div class="card-body">
@@ -244,15 +259,21 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                         <div class="mt-1"><img src="<?= $tourToEdit['imagen'] ?>" class="img-preview-mini"> <small class="text-success">Guardada</small></div>
                     <?php endif; ?>
                 </div>
+                
                 <div class="col-md-6">
                     <label class="form-label small fw-bold text-primary">Galería</label>
                     <input type="file" name="galeria[]" class="form-control" accept="image/*" multiple>
-                    <?php if(!empty($tourToEdit['galeria'])): ?>
-                        <div class="mt-1 d-flex flex-wrap">
-                            <?php foreach($tourToEdit['galeria'] as $g): ?><img src="<?= $g ?>" class="gallery-thumb"><?php endforeach; ?>
-                        </div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" name="borrar_galeria" value="1" id="delG"><label class="form-check-label small text-danger" for="delG">Borrar todas</label></div>
-                    <?php endif; ?>
+                    <div class="mt-2">
+                        <?php if(!empty($tourToEdit['galeria'])): ?>
+                            <small class="d-block text-muted mb-1">Selecciona para borrar:</small>
+                            <?php foreach($tourToEdit['galeria'] as $g): ?>
+                                <div class="gallery-thumb-container">
+                                    <img src="<?= $g ?>" class="gallery-thumb">
+                                    <input type="checkbox" name="delete_imgs[]" value="<?= $g ?>" title="Borrar esta foto"> 🗑️
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small fw-bold">Información</h6></div>
@@ -280,9 +301,19 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                 </div>
 
                 <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small fw-bold">Precios</h6></div>
-                <div class="col-6 col-md-3"><label class="small fw-bold">COP Adulto</label><input type="number" name="precio" class="form-control" required value="<?= $tourToEdit['precio_cop'] ?? '' ?>"></div>
+                
+                <div class="col-6 col-md-3">
+                    <label class="small fw-bold text-success">Precio Actual</label>
+                    <input type="number" name="precio" class="form-control border-success" required value="<?= $tourToEdit['precio_cop'] ?? '' ?>">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="small fw-bold text-muted">Precio Anterior (Opcional)</label>
+                    <input type="number" name="precio_antes" class="form-control bg-light" placeholder="Ej: 250000" value="<?= $tourToEdit['precio_antes'] ?? '' ?>">
+                    <small style="font-size:0.65rem" class="text-muted">Si llenas esto, sale tachado.</small>
+                </div>
                 <div class="col-6 col-md-3"><label class="small fw-bold">Edad Ad.</label><input type="text" name="rango_adulto" class="form-control" value="<?= htmlspecialchars($tourToEdit['rango_adulto'] ?? '') ?>"></div>
-                <div class="col-6 col-md-3"><label class="small fw-bold">COP Niño</label><input type="number" name="precio_nino" class="form-control" value="<?= $tourToEdit['precio_nino'] ?? '' ?>"></div>
+                
+                <div class="col-12 d-block d-md-none mb-2"></div> <div class="col-6 col-md-3"><label class="small fw-bold">COP Niño</label><input type="number" name="precio_nino" class="form-control" value="<?= $tourToEdit['precio_nino'] ?? '' ?>"></div>
                 <div class="col-6 col-md-3"><label class="small fw-bold">Edad Ni.</label><input type="text" name="rango_nino" class="form-control" value="<?= htmlspecialchars($tourToEdit['rango_nino'] ?? '') ?>"></div>
 
                 <div class="col-12 mt-4"><button type="submit" name="add" class="btn btn-primary w-100 fw-bold">Guardar Cambios</button></div>
@@ -304,6 +335,9 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                             <span class="fw-bold d-block text-truncate" style="max-width: 200px;"><?= htmlspecialchars($tour['nombre']) ?></span>
                         </div>
                         <small class="text-muted">$<?= number_format($tour['precio_cop']) ?></small>
+                        <?php if(!empty($tour['precio_antes']) && $tour['precio_antes'] > $tour['precio_cop']): ?>
+                            <span class="badge bg-danger" style="font-size:0.6rem">OFERTA</span>
+                        <?php endif; ?>
                     </td>
                     <td class="text-end pe-3">
                         <div class="btn-group-action">
@@ -327,35 +361,17 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         const inputSlug = document.getElementById('inputSlug');
 
         if (inputNombre && inputSlug) {
-            // Variable para controlar si el usuario modificó manualmente el slug
             let slugManual = false;
-
-            // Si al cargar la página el slug ya tiene contenido (modo edición), asumimos que es "manual"
-            // para no sobrescribirlo accidentalmente al corregir el título.
-            if (inputSlug.value.trim() !== '') {
-                slugManual = true;
-            }
+            if (inputSlug.value.trim() !== '') { slugManual = true; }
 
             inputNombre.addEventListener('input', function () {
-                // Solo auto-completar si NO ha sido editado manualmente o si está vacío
                 if (!slugManual || inputSlug.value === '') {
                     let texto = this.value.trim();
-                    let slug = texto
-                        .toLowerCase()
-                        .normalize("NFD")
-                        .replace(/[\u0300-\u036f]/g, "")
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/^-+|-+$/g, '')
-                        .replace(/-+/g, '-');
-
+                    let slug = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').replace(/-+/g, '-');
                     inputSlug.value = slug;
                 }
             });
-
-            // Si el usuario escribe en el campo Slug, marcamos como manual
-            inputSlug.addEventListener('input', function() {
-                slugManual = true;
-            });
+            inputSlug.addEventListener('input', function() { slugManual = true; });
         }
     </script>
 </body>
