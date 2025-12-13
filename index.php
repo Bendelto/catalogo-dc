@@ -25,6 +25,15 @@ $slug_solicitado = trim(str_replace($base_path, '', $request_uri), '/');
 
 $singleTour = null;
 if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $tours[$slug_solicitado];
+
+// --- NORMALIZAR DATOS PARA LA VISTA (Compatibilidad) ---
+if ($singleTour) {
+    $desc = $singleTour['descripcion'] ?? $singleTour['description'] ?? '';
+    $inc = $singleTour['incluye'] ?? $singleTour['include'] ?? '';
+    $no_inc = $singleTour['no_incluye'] ?? $singleTour['not_include'] ?? '';
+    $horario = $singleTour['horario'] ?? $singleTour['schedule'] ?? '';
+    $punto = $singleTour['punto_encuentro'] ?? $singleTour['meeting_point'] ?? '';
+}
 ?>
 
 <!DOCTYPE html>
@@ -99,9 +108,7 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
                     <img src="<?= $imgSrc ?>" class="gallery-reel-item" onclick="openLightbox('<?= $imgSrc ?>')" alt="Foto">
                 <?php endforeach; ?>
             </div>
-            <div class="text-center text-muted small mb-4" style="font-size:0.75rem;">
-                <i class="fa-solid fa-hand-pointer"></i> Desliza o toca para ampliar
-            </div>
+            <div class="text-center text-muted small mb-4" style="font-size:0.75rem;"><i class="fa-solid fa-hand-pointer"></i> Desliza o toca para ampliar</div>
         <?php endif; ?>
 
         <div class="card card-price p-3 mb-4">
@@ -130,9 +137,9 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
         </div>
 
         <div class="info-box">
-            <?php if(!empty($singleTour['descripcion'])): ?>
+            <?php if(!empty($desc)): ?>
                 <div class="text-secondary mb-4" style="white-space: pre-line; line-height: 1.6;">
-                    <?= htmlspecialchars($singleTour['descripcion']) ?>
+                    <?= htmlspecialchars($desc) ?>
                 </div>
                 <hr class="opacity-25 my-4">
             <?php endif; ?>
@@ -141,7 +148,7 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
                 <div class="col-12 col-md-6 border-bottom border-md-0 pb-3 pb-md-0">
                     <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-check text-success"></i> Incluye</h6>
                     <ul class="list-check ps-0 m-0 text-secondary">
-                        <?php foreach(explode("\n", $singleTour['incluye'] ?? '') as $item): if(trim($item)=='')continue; ?>
+                        <?php foreach(explode("\n", $inc) as $item): if(trim($item)=='')continue; ?>
                             <li><i class="fa-solid fa-check text-success"></i> <?= htmlspecialchars($item) ?></li>
                         <?php endforeach; ?>
                     </ul>
@@ -149,7 +156,7 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
                 <div class="col-12 col-md-6">
                     <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-xmark text-danger"></i> No incluye</h6>
                     <ul class="list-check ps-0 m-0 text-secondary">
-                        <?php foreach(explode("\n", $singleTour['no_incluye'] ?? '') as $item): if(trim($item)=='')continue; ?>
+                        <?php foreach(explode("\n", $no_inc) as $item): if(trim($item)=='')continue; ?>
                             <li><i class="fa-solid fa-xmark text-danger"></i> <?= htmlspecialchars($item) ?></li>
                         <?php endforeach; ?>
                     </ul>
@@ -157,10 +164,10 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
             </div>
         </div>
 
-        <?php if(!empty($singleTour['horario']) || !empty($singleTour['punto_encuentro'])): ?>
+        <?php if(!empty($horario) || !empty($punto)): ?>
         <div class="accordion accordion-flush mb-4" id="accordionExtras">
             
-            <?php if(!empty($singleTour['horario'])): ?>
+            <?php if(!empty($horario)): ?>
             <div class="accordion-item">
                 <h2 class="accordion-header">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHorario">
@@ -170,7 +177,7 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
                 <div id="collapseHorario" class="accordion-collapse collapse" data-bs-parent="#accordionExtras">
                     <div class="accordion-body text-secondary">
                         <ul class="list-unstyled m-0">
-                            <?php foreach(explode("\n", $singleTour['horario']) as $line): if(trim($line)=='')continue; ?>
+                            <?php foreach(explode("\n", $horario) as $line): if(trim($line)=='')continue; ?>
                                 <li class="mb-2 d-flex align-items-start">
                                     <i class="fa-regular fa-clock text-primary mt-1 me-2"></i>
                                     <span><?= htmlspecialchars($line) ?></span>
@@ -182,7 +189,7 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
             </div>
             <?php endif; ?>
 
-            <?php if(!empty($singleTour['punto_encuentro'])): ?>
+            <?php if(!empty($punto)): ?>
             <div class="accordion-item">
                 <h2 class="accordion-header">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePunto">
@@ -192,7 +199,7 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
                 <div id="collapsePunto" class="accordion-collapse collapse" data-bs-parent="#accordionExtras">
                     <div class="accordion-body text-secondary">
                         <ul class="list-unstyled m-0">
-                            <?php foreach(explode("\n", $singleTour['punto_encuentro']) as $line): if(trim($line)=='')continue; ?>
+                            <?php foreach(explode("\n", $punto) as $line): if(trim($line)=='')continue; ?>
                                 <li class="mb-2 d-flex align-items-start">
                                     <i class="fa-solid fa-map-pin text-danger mt-1 me-2"></i>
                                     <span><?= htmlspecialchars($line) ?></span>

@@ -29,7 +29,7 @@ if (!isset($_SESSION['admin'])) {
     <?php exit;
 }
 
-// 3. DATOS Y BACKUP
+// 3. DATOS
 $fileTours = 'data.json';
 $fileConfig = 'config.json';
 
@@ -60,7 +60,7 @@ if (isset($_POST['save_config'])) {
 }
 
 // ==========================================
-//      LÓGICA DE GUARDADO (BLINDADA)
+//      LÓGICA DE GUARDADO (ADD/EDIT)
 // ==========================================
 if (isset($_POST['add'])) {
     $nombre = $_POST['nombre'] ?? 'Sin nombre';
@@ -69,7 +69,7 @@ if (isset($_POST['add'])) {
     $cleanSlug = trim($cleanSlug, '-');
     $originalSlug = $_POST['original_slug'] ?? '';
 
-    // RECUPERAR DATOS ANTERIORES
+    // RECUPERAR DATOS ANTERIORES (Para no perder nada)
     $datosAnteriores = [];
     if (!empty($originalSlug) && isset($tours[$originalSlug])) {
         $datosAnteriores = $tours[$originalSlug];
@@ -77,7 +77,7 @@ if (isset($_POST['add'])) {
         $datosAnteriores = $tours[$cleanSlug];
     }
 
-    // PREPARAR DATOS NUEVOS
+    // DATOS NUEVOS (Estándar en ESPAÑOL)
     $nuevosDatos = [
         'nombre' => $nombre,
         'precio_cop' => $_POST['precio'] ?? 0,
@@ -89,6 +89,7 @@ if (isset($_POST['add'])) {
         'no_incluye' => $_POST['no_incluye'] ?? '',
         'horario' => $_POST['horario'] ?? '',
         'punto_encuentro' => $_POST['punto_encuentro'] ?? '',
+        // Mantener fotos si no se suben nuevas
         'imagen' => $datosAnteriores['imagen'] ?? '', 
         'galeria' => $datosAnteriores['galeria'] ?? []
     ];
@@ -123,13 +124,15 @@ if (isset($_POST['add'])) {
         $nuevosDatos['galeria'] = [];
     }
 
-    // FUSIÓN Y GUARDADO
+    // Eliminar entrada vieja si cambió el slug
     if (!empty($originalSlug) && $originalSlug != $cleanSlug) {
         if(isset($tours[$originalSlug])) unset($tours[$originalSlug]);
     }
     
+    // FUSIÓN Y GUARDADO
     $tours[$cleanSlug] = array_merge($datosAnteriores, $nuevosDatos);
     
+    // JSON_UNESCAPED_UNICODE es vital para tildes y eñes
     file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     header("Location: admin.php");
     exit;
@@ -148,11 +151,31 @@ if (isset($_GET['delete'])) {
 
 if (isset($_GET['logout'])) { session_destroy(); header("Location: admin.php"); exit; }
 
+// CARGAR DATOS (INTELIGENCIA PARA RECUPERAR DATOS VIEJOS)
 $tourToEdit = null;
 $editingSlug = '';
 if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
-    $tourToEdit = $tours[$_GET['edit']];
+    $d = $tours[$_GET['edit']]; // "d" de data
     $editingSlug = $_GET['edit'];
+    
+    // Aquí verificamos TODAS las posibles versiones de nombres para no perder nada
+    $tourToEdit = [
+        'nombre' => $d['nombre'] ?? '',
+        'precio_cop' => $d['precio_cop'] ?? '',
+        'rango_adulto' => $d['rango_adulto'] ?? '',
+        'precio_nino' => $d['precio_nino'] ?? '',
+        'rango_nino' => $d['rango_nino'] ?? '',
+        
+        // Recuperación de textos (Español o Inglés)
+        'descripcion' => $d['descripcion'] ?? ($d['description'] ?? ''),
+        'incluye' => $d['incluye'] ?? ($d['include'] ?? ''),
+        'no_incluye' => $d['no_incluye'] ?? ($d['not_include'] ?? ''),
+        'horario' => $d['horario'] ?? ($d['schedule'] ?? ''),
+        'punto_encuentro' => $d['punto_encuentro'] ?? ($d['meeting_point'] ?? ''),
+        
+        'imagen' => $d['imagen'] ?? '',
+        'galeria' => $d['galeria'] ?? []
+    ];
 }
 ?>
 
@@ -165,7 +188,6 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { padding-bottom: 50px; background-color: #f8f9fa; }
-        .table-responsive { border-radius: 12px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .img-preview-mini { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
         .gallery-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin-right: 2px; }
     </style>
