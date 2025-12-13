@@ -99,7 +99,9 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
                     <img src="<?= $imgSrc ?>" class="gallery-reel-item" onclick="openLightbox('<?= $imgSrc ?>')" alt="Foto">
                 <?php endforeach; ?>
             </div>
-            <div class="text-center text-muted small mb-4" style="font-size:0.75rem;"><i class="fa-solid fa-hand-pointer"></i> Toca para ampliar</div>
+            <div class="text-center text-muted small mb-4" style="font-size:0.75rem;">
+                <i class="fa-solid fa-hand-pointer"></i> Desliza o toca para ampliar
+            </div>
         <?php endif; ?>
 
         <div class="card card-price p-3 mb-4">

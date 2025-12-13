@@ -63,42 +63,37 @@ if (isset($_POST['save_config'])) {
 //      LÓGICA DE GUARDADO (BLINDADA)
 // ==========================================
 if (isset($_POST['add'])) {
-    // 1. Datos básicos
     $nombre = $_POST['nombre'] ?? 'Sin nombre';
     $slugInput = !empty($_POST['slug']) ? $_POST['slug'] : $nombre;
     $cleanSlug = strtolower(preg_replace('/[^A-Za-z0-9-]+/', '-', iconv('UTF-8', 'ASCII//TRANSLIT', $slugInput)));
     $cleanSlug = trim($cleanSlug, '-');
     $originalSlug = $_POST['original_slug'] ?? '';
 
-    // 2. RECUPERAR DATOS ANTERIORES (Para no perder nada)
+    // RECUPERAR DATOS ANTERIORES
     $datosAnteriores = [];
     if (!empty($originalSlug) && isset($tours[$originalSlug])) {
         $datosAnteriores = $tours[$originalSlug];
     } elseif (isset($tours[$cleanSlug])) {
-        $datosAnteriores = $tours[$cleanSlug]; // Si el slug ya existía
+        $datosAnteriores = $tours[$cleanSlug];
     }
 
-    // 3. PREPARAR DATOS NUEVOS
+    // PREPARAR DATOS NUEVOS
     $nuevosDatos = [
         'nombre' => $nombre,
         'precio_cop' => $_POST['precio'] ?? 0,
         'rango_adulto' => $_POST['rango_adulto'] ?? '',
         'precio_nino' => $_POST['precio_nino'] ?? 0,
         'rango_nino' => $_POST['rango_nino'] ?? '',
-        
-        // Textos (Usamos htmlspecialchars_decode por si acaso, pero el raw es mejor)
         'descripcion' => $_POST['descripcion'] ?? '',
         'incluye' => $_POST['incluye'] ?? '',
         'no_incluye' => $_POST['no_incluye'] ?? '',
         'horario' => $_POST['horario'] ?? '',
         'punto_encuentro' => $_POST['punto_encuentro'] ?? '',
-        
-        // Mantener fotos viejas por defecto (se sobreescriben abajo si hay nuevas)
         'imagen' => $datosAnteriores['imagen'] ?? '', 
         'galeria' => $datosAnteriores['galeria'] ?? []
     ];
 
-    // 4. PROCESAR IMAGEN PORTADA (Solo si se sube una nueva)
+    // PROCESAR PORTADA
     if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === 0) {
         $uploadDir = 'img/';
         if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
@@ -109,7 +104,7 @@ if (isset($_POST['add'])) {
         }
     }
 
-    // 5. PROCESAR GALERÍA (Se suman a las anteriores)
+    // PROCESAR GALERÍA
     if (isset($_FILES['galeria'])) {
         $uploadDir = 'img/';
         if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
@@ -124,18 +119,15 @@ if (isset($_POST['add'])) {
             }
         }
     }
-    // Borrar galería solo si se pide explícitamente
     if (isset($_POST['borrar_galeria']) && $_POST['borrar_galeria'] == '1') {
         $nuevosDatos['galeria'] = [];
     }
 
-    // 6. FUSIÓN Y GUARDADO
-    // Si cambiamos el slug, borramos el viejo
+    // FUSIÓN Y GUARDADO
     if (!empty($originalSlug) && $originalSlug != $cleanSlug) {
         if(isset($tours[$originalSlug])) unset($tours[$originalSlug]);
     }
     
-    // array_merge asegura que si añadimos campos a futuro en el JSON manualmente, no se borren
     $tours[$cleanSlug] = array_merge($datosAnteriores, $nuevosDatos);
     
     file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
@@ -173,6 +165,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { padding-bottom: 50px; background-color: #f8f9fa; }
+        .table-responsive { border-radius: 12px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .img-preview-mini { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
         .gallery-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin-right: 2px; }
     </style>
@@ -281,8 +274,10 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                         <small class="text-muted">$<?= number_format($tour['precio_cop']) ?></small>
                     </td>
                     <td class="text-end pe-3">
-                        <a href="?edit=<?= $slug ?>" class="btn btn-warning btn-sm">✏️</a>
-                        <a href="?delete=<?= $slug ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Borrar?');">🗑️</a>
+                        <div class="d-flex gap-1 justify-content-end">
+                            <a href="?edit=<?= $slug ?>" class="btn btn-warning btn-sm text-dark">Editar</a>
+                            <a href="?delete=<?= $slug ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Borrar?');">Borrar</a>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -295,8 +290,6 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         const inputSlug = document.getElementById('inputSlug');
         if(inputNombre && inputSlug){
             inputNombre.addEventListener('input', function() {
-                // Solo auto-completar si estamos creando uno nuevo (sin slug definido aún)
-                // O si el usuario quiere, puede borrar el slug y escribir de nuevo.
                 if(!inputSlug.value || inputSlug.value === '') { 
                    let text = this.value;
                    let slug = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); 
