@@ -24,9 +24,14 @@ if($base_path == '/') $base_path = '';
 $slug_solicitado = trim(str_replace($base_path, '', $request_uri), '/');
 
 $singleTour = null;
-if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $tours[$slug_solicitado];
+if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
+    // Verificar si está oculto antes de mostrar
+    if (empty($tours[$slug_solicitado]['oculto']) || $tours[$slug_solicitado]['oculto'] == false) {
+        $singleTour = $tours[$slug_solicitado];
+    }
+}
 
-// --- NORMALIZAR DATOS PARA LA VISTA (Compatibilidad) ---
+// --- NORMALIZAR DATOS ---
 if ($singleTour) {
     $desc = $singleTour['descripcion'] ?? $singleTour['description'] ?? '';
     $inc = $singleTour['incluye'] ?? $singleTour['include'] ?? '';
@@ -269,7 +274,10 @@ if ($singleTour) {
         <small class="text-muted d-block mt-2" style="font-size: 0.7rem;">* Tasas calculadas con margen de cambio local</small>
     </div>
     <div class="row g-4">
-        <?php foreach ($tours as $slug => $tour): ?>
+        <?php foreach ($tours as $slug => $tour): 
+            // FILTRO DE OCULTOS (NUEVO)
+            if(!empty($tour['oculto']) && $tour['oculto'] == true) continue;
+        ?>
         <div class="col-12 col-md-6 col-lg-4">
             <a href="./<?= $slug ?>" class="card card-price">
                 <?php if(!empty($tour['imagen'])): ?><img src="<?= $tour['imagen'] ?>" class="tour-img-list"><?php endif; ?>

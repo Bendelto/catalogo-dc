@@ -60,6 +60,22 @@ if (isset($_POST['save_config'])) {
 }
 
 // ==========================================
+//      LÓGICA: OCULTAR / MOSTRAR (NUEVO)
+// ==========================================
+if (isset($_GET['toggle_hide'])) {
+    $slugTarget = $_GET['toggle_hide'];
+    if (isset($tours[$slugTarget])) {
+        // Si no existe el campo 'oculto', es false (visible). Lo invertimos.
+        $estadoActual = $tours[$slugTarget]['oculto'] ?? false;
+        $tours[$slugTarget]['oculto'] = !$estadoActual;
+        
+        file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    }
+    header("Location: admin.php");
+    exit;
+}
+
+// ==========================================
 //      LÓGICA DE GUARDADO (ADD/EDIT)
 // ==========================================
 if (isset($_POST['add'])) {
@@ -69,7 +85,7 @@ if (isset($_POST['add'])) {
     $cleanSlug = trim($cleanSlug, '-');
     $originalSlug = $_POST['original_slug'] ?? '';
 
-    // RECUPERAR DATOS ANTERIORES (Para no perder nada)
+    // RECUPERAR DATOS ANTERIORES
     $datosAnteriores = [];
     if (!empty($originalSlug) && isset($tours[$originalSlug])) {
         $datosAnteriores = $tours[$originalSlug];
@@ -77,7 +93,7 @@ if (isset($_POST['add'])) {
         $datosAnteriores = $tours[$cleanSlug];
     }
 
-    // DATOS NUEVOS (Estándar en ESPAÑOL)
+    // DATOS NUEVOS
     $nuevosDatos = [
         'nombre' => $nombre,
         'precio_cop' => $_POST['precio'] ?? 0,
@@ -89,9 +105,10 @@ if (isset($_POST['add'])) {
         'no_incluye' => $_POST['no_incluye'] ?? '',
         'horario' => $_POST['horario'] ?? '',
         'punto_encuentro' => $_POST['punto_encuentro'] ?? '',
-        // Mantener fotos si no se suben nuevas
         'imagen' => $datosAnteriores['imagen'] ?? '', 
-        'galeria' => $datosAnteriores['galeria'] ?? []
+        'galeria' => $datosAnteriores['galeria'] ?? [],
+        // Mantener estado oculto si ya lo estaba
+        'oculto' => $datosAnteriores['oculto'] ?? false 
     ];
 
     // PROCESAR PORTADA
@@ -132,7 +149,6 @@ if (isset($_POST['add'])) {
     // FUSIÓN Y GUARDADO
     $tours[$cleanSlug] = array_merge($datosAnteriores, $nuevosDatos);
     
-    // JSON_UNESCAPED_UNICODE es vital para tildes y eñes
     file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     header("Location: admin.php");
     exit;
@@ -151,28 +167,24 @@ if (isset($_GET['delete'])) {
 
 if (isset($_GET['logout'])) { session_destroy(); header("Location: admin.php"); exit; }
 
-// CARGAR DATOS (INTELIGENCIA PARA RECUPERAR DATOS VIEJOS)
+// CARGAR DATOS
 $tourToEdit = null;
 $editingSlug = '';
 if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
-    $d = $tours[$_GET['edit']]; // "d" de data
+    $d = $tours[$_GET['edit']];
     $editingSlug = $_GET['edit'];
     
-    // Aquí verificamos TODAS las posibles versiones de nombres para no perder nada
     $tourToEdit = [
         'nombre' => $d['nombre'] ?? '',
         'precio_cop' => $d['precio_cop'] ?? '',
         'rango_adulto' => $d['rango_adulto'] ?? '',
         'precio_nino' => $d['precio_nino'] ?? '',
         'rango_nino' => $d['rango_nino'] ?? '',
-        
-        // Recuperación de textos (Español o Inglés)
         'descripcion' => $d['descripcion'] ?? ($d['description'] ?? ''),
         'incluye' => $d['incluye'] ?? ($d['include'] ?? ''),
         'no_incluye' => $d['no_incluye'] ?? ($d['not_include'] ?? ''),
         'horario' => $d['horario'] ?? ($d['schedule'] ?? ''),
         'punto_encuentro' => $d['punto_encuentro'] ?? ($d['meeting_point'] ?? ''),
-        
         'imagen' => $d['imagen'] ?? '',
         'galeria' => $d['galeria'] ?? []
     ];
@@ -190,6 +202,11 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         body { padding-bottom: 50px; background-color: #f8f9fa; }
         .img-preview-mini { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
         .gallery-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin-right: 2px; }
+        .btn-group-action { display: flex; gap: 5px; justify-content: flex-end; }
+        @media (max-width: 576px) { .btn-group-action { flex-direction: column; } .btn-group-action .btn { width: 100%; } }
+        /* Estilo para fila oculta */
+        .row-hidden { background-color: #e9ecef; opacity: 0.75; }
+        .row-hidden td { color: #6c757d; }
     </style>
 </head>
 <body class="container py-4">
@@ -289,16 +306,27 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light"><tr><th class="ps-3">Tour</th><th class="text-end pe-3">Acción</th></tr></thead>
             <tbody>
-                <?php foreach ($tours as $slug => $tour): ?>
-                <tr class="<?= $slug == $editingSlug ? 'table-warning' : '' ?>">
+                <?php foreach ($tours as $slug => $tour): 
+                    $estaOculto = isset($tour['oculto']) && $tour['oculto'] == true;
+                ?>
+                <tr class="<?= $slug == $editingSlug ? 'table-warning' : '' ?> <?= $estaOculto ? 'row-hidden' : '' ?>">
                     <td class="ps-3">
-                        <div class="fw-bold text-truncate" style="max-width: 200px;"><?= htmlspecialchars($tour['nombre']) ?></div>
+                        <div class="d-flex align-items-center">
+                            <?php if($estaOculto): ?><span class="badge bg-secondary me-2">Oculto</span><?php endif; ?>
+                            <span class="fw-bold d-block text-truncate" style="max-width: 200px;"><?= htmlspecialchars($tour['nombre']) ?></span>
+                        </div>
                         <small class="text-muted">$<?= number_format($tour['precio_cop']) ?></small>
                     </td>
                     <td class="text-end pe-3">
-                        <div class="d-flex gap-1 justify-content-end">
+                        <div class="btn-group-action">
+                            <?php if($estaOculto): ?>
+                                <a href="?toggle_hide=<?= $slug ?>" class="btn btn-success btn-sm text-white" title="Mostrar">🔓 Mostrar</a>
+                            <?php else: ?>
+                                <a href="?toggle_hide=<?= $slug ?>" class="btn btn-secondary btn-sm text-white" title="Ocultar">👁️ Ocultar</a>
+                            <?php endif; ?>
+                            
                             <a href="?edit=<?= $slug ?>" class="btn btn-warning btn-sm text-dark">Editar</a>
-                            <a href="?delete=<?= $slug ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Borrar?');">Borrar</a>
+                            <a href="?delete=<?= $slug ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Borrar este tour permanentemente?');">Borrar</a>
                         </div>
                     </td>
                 </tr>
