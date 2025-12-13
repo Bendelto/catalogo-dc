@@ -25,19 +25,29 @@ $slug_solicitado = trim(str_replace($base_path, '', $request_uri), '/');
 
 $singleTour = null;
 if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
-    // Verificar si está oculto antes de mostrar
     if (empty($tours[$slug_solicitado]['oculto']) || $tours[$slug_solicitado]['oculto'] == false) {
         $singleTour = $tours[$slug_solicitado];
     }
 }
 
-// --- NORMALIZAR DATOS ---
+// --- PREPARAR DATOS Y ENLACE WHATSAPP ---
+$waLink = "";
 if ($singleTour) {
     $desc = $singleTour['descripcion'] ?? $singleTour['description'] ?? '';
     $inc = $singleTour['incluye'] ?? $singleTour['include'] ?? '';
     $no_inc = $singleTour['no_incluye'] ?? $singleTour['not_include'] ?? '';
     $horario = $singleTour['horario'] ?? $singleTour['schedule'] ?? '';
     $punto = $singleTour['punto_encuentro'] ?? $singleTour['meeting_point'] ?? '';
+
+    // Construcción del mensaje de WhatsApp
+    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
+    $currentUrl = $protocol . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+    
+    $mensaje  = "Hola Descubre Cartagena, me gustaría reservar: \n\n";
+    $mensaje .= "📍 *" . $singleTour['nombre'] . "*\n";
+    $mensaje .= "🔗 " . $currentUrl;
+    
+    $waLink = "https://wa.me/573205899997?text=" . urlencode($mensaje);
 }
 ?>
 
@@ -84,9 +94,28 @@ if ($singleTour) {
         .calc-box { background-color: #fff; border-radius: 12px; padding: 20px; border: 1px solid #edf2f7; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .form-control-qty { text-align: center; font-weight: bold; background: #f8f9fa; height: 50px; font-size: 1.3rem; }
         .total-display { background-color: #e7f1ff; color: #0d6efd; border: 1px solid #cce5ff; border-radius: 12px; padding: 20px; margin-top: 20px; }
+        
         .btn-solid-blue { background-color: #0d6efd; color: white; border: none; border-radius: 50px; padding: 12px 20px; font-weight: 600; width: 100%; display: block; text-align: center; text-decoration: none; }
         .btn-back { background-color: #e9ecef; color: #212529; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: bold; }
         .currency-tag { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; opacity: 0.8; }
+
+        /* --- BOTONES WHATSAPP --- */
+        .btn-whatsapp-desktop {
+            background-color: #25D366; color: white; font-weight: bold; border: none;
+            border-radius: 50px; padding: 12px; text-decoration: none; display: block; text-align: center;
+            transition: background 0.3s;
+        }
+        .btn-whatsapp-desktop:hover { background-color: #1ebc57; color: white; }
+
+        .btn-whatsapp-mobile {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 1050; background-color: #25D366; color: white;
+            padding: 12px 25px; border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+            font-weight: bold; text-decoration: none; display: flex; align-items: center; gap: 8px;
+            white-space: nowrap;
+        }
+        .btn-whatsapp-mobile:hover { color: white; }
     </style>
 </head>
 <body class="py-4">
@@ -95,9 +124,7 @@ if ($singleTour) {
 
 <div class="container main-container">
 <?php if ($singleTour): ?>
-    <div class="calc-container">
-        
-        <div class="d-flex align-items-center gap-3 mb-4">
+    <div class="calc-container" style="padding-bottom: 80px;"> <div class="d-flex align-items-center gap-3 mb-4">
             <a href="./" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
             <h4 class="mb-0 lh-sm"><?= htmlspecialchars($singleTour['nombre']) ?></h4>
         </div>
@@ -232,9 +259,20 @@ if ($singleTour) {
                     <div class="col-6"><div class="currency-tag text-primary mb-1"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> Reais</div><div class="fw-bold text-primary fs-4" id="totalBRL">R$ 0</div></div>
                 </div>
             </div>
+            
+            <div class="d-none d-md-block mt-4">
+                <a href="<?= $waLink ?>" target="_blank" class="btn-whatsapp-desktop shadow">
+                    <i class="fa-brands fa-whatsapp fa-lg me-2"></i> Reservar por WhatsApp
+                </a>
+            </div>
         </div>
 
         <a href="./" class="btn-solid-blue shadow mb-5">Ver todos los tours</a>
+        
+        <a href="<?= $waLink ?>" target="_blank" class="btn-whatsapp-mobile d-md-none">
+            <i class="fa-brands fa-whatsapp fa-lg"></i> Reservar por WhatsApp
+        </a>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -275,7 +313,7 @@ if ($singleTour) {
     </div>
     <div class="row g-4">
         <?php foreach ($tours as $slug => $tour): 
-            // FILTRO DE OCULTOS (NUEVO)
+            // FILTRO DE OCULTOS
             if(!empty($tour['oculto']) && $tour['oculto'] == true) continue;
         ?>
         <div class="col-12 col-md-6 col-lg-4">
