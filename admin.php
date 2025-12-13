@@ -29,7 +29,7 @@ if (!isset($_SESSION['admin'])) {
     <?php exit;
 }
 
-// 3. DATOS Y BACKUP
+// 3. DATOS
 $fileTours = 'data.json';
 $fileConfig = 'config.json';
 
@@ -91,18 +91,16 @@ if (isset($_POST['add'])) {
 
     // GESTIÓN DE GALERÍA (Borrado Individual)
     $galeriaActual = $datosAnteriores['galeria'] ?? [];
-    
-    // Si se marcaron fotos para borrar, las quitamos del array
     if (isset($_POST['delete_imgs']) && is_array($_POST['delete_imgs'])) {
         $galeriaActual = array_diff($galeriaActual, $_POST['delete_imgs']);
-        $galeriaActual = array_values($galeriaActual); // Reindexar para evitar huecos en el JSON
+        $galeriaActual = array_values($galeriaActual);
     }
 
     // PREPARAR DATOS NUEVOS
     $nuevosDatos = [
         'nombre' => $nombre,
-        'precio_cop' => $_POST['precio'] ?? 0,
-        'precio_antes' => $_POST['precio_antes'] ?? 0, // NUEVO: PRECIO OFERTA
+        'precio_cop' => $_POST['precio'] ?? 0, // Precio Adulto Normal
+        'precio_promo' => $_POST['precio_promo'] ?? 0, // Precio Promoción (NUEVO)
         'rango_adulto' => $_POST['rango_adulto'] ?? '',
         'precio_nino' => $_POST['precio_nino'] ?? 0,
         'rango_nino' => $_POST['rango_nino'] ?? '',
@@ -112,7 +110,7 @@ if (isset($_POST['add'])) {
         'horario' => $_POST['horario'] ?? '',
         'punto_encuentro' => $_POST['punto_encuentro'] ?? '',
         'imagen' => $datosAnteriores['imagen'] ?? '', 
-        'galeria' => $galeriaActual, // Usamos la galería filtrada
+        'galeria' => $galeriaActual,
         'oculto' => $datosAnteriores['oculto'] ?? false
     ];
 
@@ -143,12 +141,10 @@ if (isset($_POST['add'])) {
         }
     }
 
-    // Eliminar entrada vieja si cambió el slug
     if (!empty($originalSlug) && $originalSlug != $cleanSlug) {
         if(isset($tours[$originalSlug])) unset($tours[$originalSlug]);
     }
     
-    // FUSIÓN Y GUARDADO
     $tours[$cleanSlug] = array_merge($datosAnteriores, $nuevosDatos);
     
     file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
@@ -179,7 +175,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
     $tourToEdit = [
         'nombre' => $d['nombre'] ?? '',
         'precio_cop' => $d['precio_cop'] ?? '',
-        'precio_antes' => $d['precio_antes'] ?? '', // Cargar precio oferta
+        'precio_promo' => $d['precio_promo'] ?? '', // Cargar promo
         'rango_adulto' => $d['rango_adulto'] ?? '',
         'precio_nino' => $d['precio_nino'] ?? '',
         'rango_nino' => $d['rango_nino'] ?? '',
@@ -300,21 +296,30 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                     <textarea name="punto_encuentro" class="form-control" rows="2"><?= htmlspecialchars($tourToEdit['punto_encuentro'] ?? '') ?></textarea>
                 </div>
 
-                <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small fw-bold">Precios</h6></div>
+                <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small fw-bold">Precios y Edades</h6></div>
                 
-                <div class="col-6 col-md-3">
-                    <label class="small fw-bold text-success">Precio Actual</label>
-                    <input type="number" name="precio" class="form-control border-success" required value="<?= $tourToEdit['precio_cop'] ?? '' ?>">
+                <div class="col-6 col-md-4">
+                    <label class="small fw-bold text-dark">Precio Adultos</label>
+                    <input type="number" name="precio" class="form-control" required value="<?= $tourToEdit['precio_cop'] ?? '' ?>">
                 </div>
-                <div class="col-6 col-md-3">
-                    <label class="small fw-bold text-muted">Precio Anterior (Opcional)</label>
-                    <input type="number" name="precio_antes" class="form-control bg-light" placeholder="Ej: 250000" value="<?= $tourToEdit['precio_antes'] ?? '' ?>">
-                    <small style="font-size:0.65rem" class="text-muted">Si llenas esto, sale tachado.</small>
+                <div class="col-6 col-md-4">
+                    <label class="small fw-bold text-dark">Precio Niños</label>
+                    <input type="number" name="precio_nino" class="form-control" value="<?= $tourToEdit['precio_nino'] ?? '' ?>">
                 </div>
-                <div class="col-6 col-md-3"><label class="small fw-bold">Edad Ad.</label><input type="text" name="rango_adulto" class="form-control" value="<?= htmlspecialchars($tourToEdit['rango_adulto'] ?? '') ?>"></div>
-                
-                <div class="col-12 d-block d-md-none mb-2"></div> <div class="col-6 col-md-3"><label class="small fw-bold">COP Niño</label><input type="number" name="precio_nino" class="form-control" value="<?= $tourToEdit['precio_nino'] ?? '' ?>"></div>
-                <div class="col-6 col-md-3"><label class="small fw-bold">Edad Ni.</label><input type="text" name="rango_nino" class="form-control" value="<?= htmlspecialchars($tourToEdit['rango_nino'] ?? '') ?>"></div>
+                <div class="col-12 col-md-4">
+                    <label class="small fw-bold text-danger">Precio de promoción</label>
+                    <input type="number" name="precio_promo" class="form-control border-danger" placeholder="Opcional" value="<?= $tourToEdit['precio_promo'] ?? '' ?>">
+                    <small class="text-muted" style="font-size:0.65rem;">Si lo llenas, este será el precio a pagar.</small>
+                </div>
+
+                <div class="col-6">
+                    <label class="small fw-bold text-muted">Edad Adultos</label>
+                    <input type="text" name="rango_adulto" class="form-control bg-light" value="<?= htmlspecialchars($tourToEdit['rango_adulto'] ?? '') ?>">
+                </div>
+                <div class="col-6">
+                    <label class="small fw-bold text-muted">Edad Niños</label>
+                    <input type="text" name="rango_nino" class="form-control bg-light" value="<?= htmlspecialchars($tourToEdit['rango_nino'] ?? '') ?>">
+                </div>
 
                 <div class="col-12 mt-4"><button type="submit" name="add" class="btn btn-primary w-100 fw-bold">Guardar Cambios</button></div>
             </form>
@@ -335,7 +340,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                             <span class="fw-bold d-block text-truncate" style="max-width: 200px;"><?= htmlspecialchars($tour['nombre']) ?></span>
                         </div>
                         <small class="text-muted">$<?= number_format($tour['precio_cop']) ?></small>
-                        <?php if(!empty($tour['precio_antes']) && $tour['precio_antes'] > $tour['precio_cop']): ?>
+                        <?php if(!empty($tour['precio_promo']) && $tour['precio_promo'] < $tour['precio_cop']): ?>
                             <span class="badge bg-danger" style="font-size:0.6rem">OFERTA</span>
                         <?php endif; ?>
                     </td>
