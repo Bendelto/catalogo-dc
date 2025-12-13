@@ -166,8 +166,15 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
                     </button>
                 </h2>
                 <div id="collapseHorario" class="accordion-collapse collapse" data-bs-parent="#accordionExtras">
-                    <div class="accordion-body text-secondary" style="white-space: pre-line;">
-                        <?= htmlspecialchars($singleTour['horario']) ?>
+                    <div class="accordion-body text-secondary">
+                        <ul class="list-unstyled m-0">
+                            <?php foreach(explode("\n", $singleTour['horario']) as $line): if(trim($line)=='')continue; ?>
+                                <li class="mb-2 d-flex align-items-start">
+                                    <i class="fa-regular fa-clock text-primary mt-1 me-2"></i>
+                                    <span><?= htmlspecialchars($line) ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -181,8 +188,15 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) $singleTour = $
                     </button>
                 </h2>
                 <div id="collapsePunto" class="accordion-collapse collapse" data-bs-parent="#accordionExtras">
-                    <div class="accordion-body text-secondary" style="white-space: pre-line;">
-                        <?= htmlspecialchars($singleTour['punto_encuentro']) ?>
+                    <div class="accordion-body text-secondary">
+                        <ul class="list-unstyled m-0">
+                            <?php foreach(explode("\n", $singleTour['punto_encuentro']) as $line): if(trim($line)=='')continue; ?>
+                                <li class="mb-2 d-flex align-items-start">
+                                    <i class="fa-solid fa-map-pin text-danger mt-1 me-2"></i>
+                                    <span><?= htmlspecialchars($line) ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
                     </div>
                 </div>
             </div>
