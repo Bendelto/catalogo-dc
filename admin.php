@@ -25,7 +25,7 @@ if (isset($_POST['login'])) {
 
 if (!isset($_SESSION['admin'])) {
     ?>
-    <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Login</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head><body class="d-flex justify-content-center align-items-center vh-100 px-3 bg-light"><form method="post" class="card p-4 shadow" style="max-width:400px;width:100%"><h3 class="text-center mb-3">🔐 Admin</h3><?php if($errorMsg): ?><div class="alert alert-danger py-1"><?= $errorMsg ?></div><?php endif; ?><input type="text" name="user" class="form-control mb-3" placeholder="Usuario" required autofocus><input type="password" name="pass" class="form-control mb-3" placeholder="Contraseña" required><button name="login" class="btn btn-primary w-100">Entrar</button></form></body></html>
+    <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Login</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head><body class="d-flex justify-content-center align-items-center vh-100 px-3 bg-light"><form method="post" class="card p-4 shadow" style="max-width:400px;width:100%"><h3 class="text-center mb-3">Admin</h3><?php if($errorMsg): ?><div class="alert alert-danger py-1"><?= $errorMsg ?></div><?php endif; ?><input type="text" name="user" class="form-control mb-3" placeholder="Usuario" required autofocus><input type="password" name="pass" class="form-control mb-3" placeholder="Contraseña" required><button name="login" class="btn btn-primary w-100">Entrar</button></form></body></html>
     <?php exit;
 }
 
@@ -59,25 +59,19 @@ if (isset($_POST['save_config'])) {
     exit;
 }
 
-// ==========================================
-//      LÓGICA: OCULTAR / MOSTRAR (NUEVO)
-// ==========================================
+// OCULTAR / MOSTRAR
 if (isset($_GET['toggle_hide'])) {
     $slugTarget = $_GET['toggle_hide'];
     if (isset($tours[$slugTarget])) {
-        // Si no existe el campo 'oculto', es false (visible). Lo invertimos.
         $estadoActual = $tours[$slugTarget]['oculto'] ?? false;
         $tours[$slugTarget]['oculto'] = !$estadoActual;
-        
         file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     }
     header("Location: admin.php");
     exit;
 }
 
-// ==========================================
-//      LÓGICA DE GUARDADO (ADD/EDIT)
-// ==========================================
+// GUARDADO (ADD/EDIT)
 if (isset($_POST['add'])) {
     $nombre = $_POST['nombre'] ?? 'Sin nombre';
     $slugInput = !empty($_POST['slug']) ? $_POST['slug'] : $nombre;
@@ -85,7 +79,6 @@ if (isset($_POST['add'])) {
     $cleanSlug = trim($cleanSlug, '-');
     $originalSlug = $_POST['original_slug'] ?? '';
 
-    // RECUPERAR DATOS ANTERIORES
     $datosAnteriores = [];
     if (!empty($originalSlug) && isset($tours[$originalSlug])) {
         $datosAnteriores = $tours[$originalSlug];
@@ -93,7 +86,6 @@ if (isset($_POST['add'])) {
         $datosAnteriores = $tours[$cleanSlug];
     }
 
-    // DATOS NUEVOS
     $nuevosDatos = [
         'nombre' => $nombre,
         'precio_cop' => $_POST['precio'] ?? 0,
@@ -105,13 +97,12 @@ if (isset($_POST['add'])) {
         'no_incluye' => $_POST['no_incluye'] ?? '',
         'horario' => $_POST['horario'] ?? '',
         'punto_encuentro' => $_POST['punto_encuentro'] ?? '',
-        'imagen' => $datosAnteriores['imagen'] ?? '', 
+        'imagen' => $datosAnteriores['imagen'] ?? '',
         'galeria' => $datosAnteriores['galeria'] ?? [],
-        // Mantener estado oculto si ya lo estaba
-        'oculto' => $datosAnteriores['oculto'] ?? false 
+        'oculto' => $datosAnteriores['oculto'] ?? false
     ];
 
-    // PROCESAR PORTADA
+    // PORTADA
     if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === 0) {
         $uploadDir = 'img/';
         if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
@@ -122,7 +113,7 @@ if (isset($_POST['add'])) {
         }
     }
 
-    // PROCESAR GALERÍA
+    // GALERÍA
     if (isset($_FILES['galeria'])) {
         $uploadDir = 'img/';
         if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
@@ -141,12 +132,10 @@ if (isset($_POST['add'])) {
         $nuevosDatos['galeria'] = [];
     }
 
-    // Eliminar entrada vieja si cambió el slug
     if (!empty($originalSlug) && $originalSlug != $cleanSlug) {
         if(isset($tours[$originalSlug])) unset($tours[$originalSlug]);
     }
-    
-    // FUSIÓN Y GUARDADO
+
     $tours[$cleanSlug] = array_merge($datosAnteriores, $nuevosDatos);
     
     file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
@@ -167,7 +156,7 @@ if (isset($_GET['delete'])) {
 
 if (isset($_GET['logout'])) { session_destroy(); header("Location: admin.php"); exit; }
 
-// CARGAR DATOS
+// CARGAR PARA EDITAR
 $tourToEdit = null;
 $editingSlug = '';
 if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
@@ -204,7 +193,6 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         .gallery-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; margin-right: 2px; }
         .btn-group-action { display: flex; gap: 5px; justify-content: flex-end; }
         @media (max-width: 576px) { .btn-group-action { flex-direction: column; } .btn-group-action .btn { width: 100%; } }
-        /* Estilo para fila oculta */
         .row-hidden { background-color: #e9ecef; opacity: 0.75; }
         .row-hidden td { color: #6c757d; }
     </style>
@@ -214,14 +202,14 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div><h2 class="fw-bold mb-0">Panel de Control</h2></div>
         <div class="d-flex gap-2">
-            <a href="?backup=1" class="btn btn-success btn-sm fw-bold align-self-center">⬇ Backup</a>
-            <a href="index.php" target="_blank" class="btn btn-outline-primary btn-sm fw-bold align-self-center">Web ↗</a>
-            <a href="?logout=1" class="btn btn-outline-secondary btn-sm align-self-center">Salir</a>
+            <a href="?backup=1" class="btn btn-success btn-sm fw-bold">Backup</a>
+            <a href="index.php" target="_blank" class="btn btn-outline-primary btn-sm fw-bold">Web</a>
+            <a href="?logout=1" class="btn btn-outline-secondary btn-sm">Salir</a>
         </div>
     </div>
 
     <div class="card mb-4 border-warning shadow-sm">
-        <div class="card-header bg-warning text-dark fw-bold">📉 Tasa</div>
+        <div class="card-header bg-warning text-dark fw-bold">Tasa</div>
         <div class="card-body py-2">
             <form method="post" class="row g-2 align-items-end">
                 <div class="col-5"><label class="small fw-bold">-$ Dólar</label><input type="number" name="margen_usd" class="form-control form-control-sm" value="<?= $config['margen_usd'] ?>"></div>
@@ -233,7 +221,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
 
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-primary text-white">
-            <span class="fw-bold"><?= $tourToEdit ? '✏️ Editando' : '➕ Nuevo' ?></span>
+            <span class="fw-bold"><?= $tourToEdit ? 'Editando' : 'Nuevo' ?></span>
             <?php if($tourToEdit): ?><a href="admin.php" class="btn btn-sm btn-light float-end py-0">Cancelar</a><?php endif; ?>
         </div>
         <div class="card-body">
@@ -274,20 +262,20 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                     <textarea name="descripcion" class="form-control" rows="3"><?= htmlspecialchars($tourToEdit['descripcion'] ?? '') ?></textarea>
                 </div>
                 <div class="col-md-6">
-                    <label class="small fw-bold text-success">✅ Incluye</label>
+                    <label class="small fw-bold text-success">Incluye</label>
                     <textarea name="incluye" class="form-control bg-success bg-opacity-10" rows="4"><?= htmlspecialchars($tourToEdit['incluye'] ?? '') ?></textarea>
                 </div>
                 <div class="col-md-6">
-                    <label class="small fw-bold text-danger">❌ No Incluye</label>
+                    <label class="small fw-bold text-danger">No Incluye</label>
                     <textarea name="no_incluye" class="form-control bg-danger bg-opacity-10" rows="4"><?= htmlspecialchars($tourToEdit['no_incluye'] ?? '') ?></textarea>
                 </div>
                 
                 <div class="col-md-6">
-                    <label class="small fw-bold">🕒 Horario</label>
+                    <label class="small fw-bold">Horario</label>
                     <textarea name="horario" class="form-control" rows="2"><?= htmlspecialchars($tourToEdit['horario'] ?? '') ?></textarea>
                 </div>
                 <div class="col-md-6">
-                    <label class="small fw-bold">📍 Punto Encuentro</label>
+                    <label class="small fw-bold">Punto Encuentro</label>
                     <textarea name="punto_encuentro" class="form-control" rows="2"><?= htmlspecialchars($tourToEdit['punto_encuentro'] ?? '') ?></textarea>
                 </div>
 
@@ -320,11 +308,10 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                     <td class="text-end pe-3">
                         <div class="btn-group-action">
                             <?php if($estaOculto): ?>
-                                <a href="?toggle_hide=<?= $slug ?>" class="btn btn-success btn-sm text-white" title="Mostrar">🔓 Mostrar</a>
+                                <a href="?toggle_hide=<?= $slug ?>" class="btn btn-success btn-sm text-white">Mostrar</a>
                             <?php else: ?>
-                                <a href="?toggle_hide=<?= $slug ?>" class="btn btn-secondary btn-sm text-white" title="Ocultar">👁️ Ocultar</a>
+                                <a href="?toggle_hide=<?= $slug ?>" class="btn btn-secondary btn-sm text-white">Ocultar</a>
                             <?php endif; ?>
-                            
                             <a href="?edit=<?= $slug ?>" class="btn btn-warning btn-sm text-dark">Editar</a>
                             <a href="?delete=<?= $slug ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Borrar este tour permanentemente?');">Borrar</a>
                         </div>
@@ -335,16 +322,33 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         </table>
     </div>
 
+    <!-- SLUG AUTOMÁTICO MEJORADO -->
     <script>
         const inputNombre = document.getElementById('inputNombre');
         const inputSlug = document.getElementById('inputSlug');
-        if(inputNombre && inputSlug){
-            inputNombre.addEventListener('input', function() {
-                if(!inputSlug.value || inputSlug.value === '') { 
-                   let text = this.value;
-                   let slug = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); 
-                   inputSlug.value = slug;
+
+        if (inputNombre && inputSlug) {
+            inputNombre.addEventListener('input', function () {
+                // Solo generar slug si el campo está vacío o no ha sido editado manualmente
+                if (inputSlug.value === '' || inputSlug.value === inputSlug.defaultValue) {
+                    let texto = this.value.trim();
+
+                    let slug = texto
+                        .toLowerCase()
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/^-+|-+$/g, '')
+                        .replace(/-+/g, '-');
+
+                    inputSlug.value = slug;
                 }
+            });
+
+            // Si el usuario escribe manualmente en el slug, ya no lo sobrescribimos
+            inputSlug.addEventListener('input', function () {
+                if (this.value !== '') {
+                    this.dataset.manuallyEdited = 'true';
             });
         }
     </script>
