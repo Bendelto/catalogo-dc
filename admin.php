@@ -142,8 +142,8 @@ if (isset($_POST['add'])) {
         'descripcion' => $descripcion, 
         'incluye' => $incluye,
         'no_incluye' => $no_incluye,
-        'horario' => $horario,             // Nuevo
-        'punto_encuentro' => $punto_encuentro, // Nuevo
+        'horario' => $horario,             
+        'punto_encuentro' => $punto_encuentro, 
         'imagen' => $imagenPath,       
         'galeria' => $galeriaPaths     
     ];
@@ -222,11 +222,11 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
 
                 <div class="col-md-6">
                     <label class="form-label small fw-bold">Nombre</label>
-                    <input type="text" name="nombre" class="form-control" required value="<?= $tourToEdit ? htmlspecialchars($tourToEdit['nombre']) : '' ?>">
+                    <input type="text" name="nombre" id="inputNombre" class="form-control" required value="<?= $tourToEdit ? htmlspecialchars($tourToEdit['nombre']) : '' ?>">
                 </div>
                 <div class="col-md-6">
                     <label class="form-label small fw-bold">URL (Slug)</label>
-                    <input type="text" name="slug" class="form-control bg-light text-muted" value="<?= $editingSlug ?>">
+                    <input type="text" name="slug" id="inputSlug" class="form-control bg-light text-muted" value="<?= $editingSlug ?>">
                 </div>
 
                 <div class="col-md-6 border-end">
@@ -266,13 +266,13 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label small fw-bold text-success">✅ Incluye (1 por línea)</label>
-                    <textarea name="incluye" class="form-control bg-success bg-opacity-10" rows="5"><?= $tourToEdit['incluye'] ?? '' ?></textarea>
+                    <label class="form-label small fw-bold text-success">✅ Incluye</label>
+                    <textarea name="incluye" class="form-control bg-success bg-opacity-10" rows="5" placeholder="1 ítem por línea"><?= $tourToEdit['incluye'] ?? '' ?></textarea>
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label small fw-bold text-danger">❌ No Incluye (1 por línea)</label>
-                    <textarea name="no_incluye" class="form-control bg-danger bg-opacity-10" rows="5"><?= $tourToEdit['no_incluye'] ?? '' ?></textarea>
+                    <label class="form-label small fw-bold text-danger">❌ No Incluye</label>
+                    <textarea name="no_incluye" class="form-control bg-danger bg-opacity-10" rows="5" placeholder="1 ítem por línea"><?= $tourToEdit['no_incluye'] ?? '' ?></textarea>
                 </div>
 
                 <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small text-uppercase fw-bold">Logística (Acordeones)</h6></div>
@@ -323,5 +323,20 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
             </tbody>
         </table>
     </div>
+
+    <script>
+        const inputNombre = document.getElementById('inputNombre');
+        const inputSlug = document.getElementById('inputSlug');
+        
+        inputNombre.addEventListener('input', function() {
+            let text = this.value;
+            let slug = text.toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
+                .replace(/[^a-z0-9]+/g, '-') 
+                .replace(/^-+|-+$/g, ''); 
+            inputSlug.value = slug;
+        });
+    </script>
+
 </body>
 </html>
