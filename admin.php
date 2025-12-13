@@ -322,17 +322,24 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         </table>
     </div>
 
-    <!-- SLUG AUTOMÁTICO MEJORADO -->
     <script>
         const inputNombre = document.getElementById('inputNombre');
         const inputSlug = document.getElementById('inputSlug');
 
         if (inputNombre && inputSlug) {
-            inputNombre.addEventListener('input', function () {
-                // Solo generar slug si el campo está vacío o no ha sido editado manualmente
-                if (inputSlug.value === '' || inputSlug.value === inputSlug.defaultValue) {
-                    let texto = this.value.trim();
+            // Variable para controlar si el usuario modificó manualmente el slug
+            let slugManual = false;
 
+            // Si al cargar la página el slug ya tiene contenido (modo edición), asumimos que es "manual"
+            // para no sobrescribirlo accidentalmente al corregir el título.
+            if (inputSlug.value.trim() !== '') {
+                slugManual = true;
+            }
+
+            inputNombre.addEventListener('input', function () {
+                // Solo auto-completar si NO ha sido editado manualmente o si está vacío
+                if (!slugManual || inputSlug.value === '') {
+                    let texto = this.value.trim();
                     let slug = texto
                         .toLowerCase()
                         .normalize("NFD")
@@ -345,10 +352,9 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                 }
             });
 
-            // Si el usuario escribe manualmente en el slug, ya no lo sobrescribimos
-            inputSlug.addEventListener('input', function () {
-                if (this.value !== '') {
-                    this.dataset.manuallyEdited = 'true';
+            // Si el usuario escribe en el campo Slug, marcamos como manual
+            inputSlug.addEventListener('input', function() {
+                slugManual = true;
             });
         }
     </script>
