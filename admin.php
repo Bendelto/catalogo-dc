@@ -99,8 +99,8 @@ if (isset($_POST['add'])) {
     // PREPARAR DATOS NUEVOS
     $nuevosDatos = [
         'nombre' => $nombre,
-        'precio_cop' => $_POST['precio'] ?? 0, // Precio Adulto Normal
-        'precio_promo' => $_POST['precio_promo'] ?? 0, // Precio Promoción (NUEVO)
+        'precio_cop' => $_POST['precio'] ?? 0, 
+        'precio_promo' => $_POST['precio_promo'] ?? 0, 
         'rango_adulto' => $_POST['rango_adulto'] ?? '',
         'precio_nino' => $_POST['precio_nino'] ?? 0,
         'rango_nino' => $_POST['rango_nino'] ?? '',
@@ -175,7 +175,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
     $tourToEdit = [
         'nombre' => $d['nombre'] ?? '',
         'precio_cop' => $d['precio_cop'] ?? '',
-        'precio_promo' => $d['precio_promo'] ?? '', // Cargar promo
+        'precio_promo' => $d['precio_promo'] ?? '',
         'rango_adulto' => $d['rango_adulto'] ?? '',
         'precio_nino' => $d['precio_nino'] ?? '',
         'rango_nino' => $d['rango_nino'] ?? '',
@@ -197,6 +197,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Panel Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { padding-bottom: 50px; background-color: #f8f9fa; }
         .img-preview-mini { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
@@ -206,6 +207,8 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         @media (max-width: 576px) { .btn-group-action { flex-direction: column; } .btn-group-action .btn { width: 100%; } }
         .row-hidden { background-color: #e9ecef; opacity: 0.75; }
         .row-hidden td { color: #6c757d; }
+        /* Badge para conteo de fotos */
+        .badge-gallery { font-size: 0.65rem; background-color: #e7f1ff; color: #0d6efd; border: 1px solid #cce5ff; }
     </style>
 </head>
 <body class="container py-4">
@@ -332,17 +335,31 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
             <tbody>
                 <?php foreach ($tours as $slug => $tour): 
                     $estaOculto = isset($tour['oculto']) && $tour['oculto'] == true;
+                    // Contar fotos galería
+                    $cntFotos = (!empty($tour['galeria']) && is_array($tour['galeria'])) ? count($tour['galeria']) : 0;
                 ?>
                 <tr class="<?= $slug == $editingSlug ? 'table-warning' : '' ?> <?= $estaOculto ? 'row-hidden' : '' ?>">
                     <td class="ps-3">
-                        <div class="d-flex align-items-center">
-                            <?php if($estaOculto): ?><span class="badge bg-secondary me-2">Oculto</span><?php endif; ?>
-                            <span class="fw-bold d-block text-truncate" style="max-width: 200px;"><?= htmlspecialchars($tour['nombre']) ?></span>
+                        <div class="d-flex align-items-center gap-3">
+                            <?php if(!empty($tour['imagen'])): ?>
+                                <img src="<?= $tour['imagen'] ?>" class="rounded" style="width: 45px; height: 45px; object-fit: cover;">
+                            <?php else: ?>
+                                <div class="rounded bg-light d-flex align-items-center justify-content-center text-muted border" style="width: 45px; height: 45px;"><i class="fa-regular fa-image"></i></div>
+                            <?php endif; ?>
+
+                            <div>
+                                <div class="d-flex align-items-center flex-wrap gap-1">
+                                    <?php if($estaOculto): ?><span class="badge bg-secondary" style="font-size:0.6rem">Oculto</span><?php endif; ?>
+                                    <span class="fw-bold d-block text-truncate" style="max-width: 250px;"><?= htmlspecialchars($tour['nombre']) ?></span>
+                                </div>
+                                <div class="small d-flex align-items-center gap-2">
+                                    <span class="text-muted">$<?= number_format($tour['precio_cop']) ?></span>
+                                    <?php if($cntFotos > 0): ?>
+                                        <span class="badge badge-gallery"><i class="fa-solid fa-camera"></i> +<?= $cntFotos ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
-                        <small class="text-muted">$<?= number_format($tour['precio_cop']) ?></small>
-                        <?php if(!empty($tour['precio_promo']) && $tour['precio_promo'] < $tour['precio_cop']): ?>
-                            <span class="badge bg-danger" style="font-size:0.6rem">OFERTA</span>
-                        <?php endif; ?>
                     </td>
                     <td class="text-end pe-3">
                         <div class="btn-group-action">
