@@ -133,7 +133,6 @@ if ($singleTour) {
         .price-old { text-decoration: line-through; color: #999; font-size: 0.9rem; font-weight: normal; margin-right: 5px; }
         
         .flag-icon { width: 22px !important; height: auto; vertical-align: middle; margin-right: 6px; box-shadow: none; flex-shrink: 0; }
-        .badge-tasa { font-size: 0.85rem; background: #fff; border: 1px solid #dee2e6; color: #555; padding: 8px 16px; border-radius: 50px; display: inline-flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         
         .calc-box { background-color: #fff; border-radius: 12px; padding: 20px; border: 1px solid #edf2f7; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .form-control-qty { text-align: center; font-weight: bold; background: #f8f9fa; height: 50px; font-size: 1.3rem; }
@@ -185,6 +184,10 @@ if ($singleTour) {
             flex-shrink: 0;
         }
         .btn-filter.active { background: #0d6efd; border-color: #0d6efd; color: white; }
+
+        /* ESTILO TASAS SUTILES */
+        .conversion-info { font-size: 0.75rem; color: #777; display: flex; align-items: center; gap: 8px; }
+        .conversion-info strong { color: #444; }
     </style>
 </head>
 <body>
@@ -253,6 +256,13 @@ if ($singleTour) {
                     <?php else: ?>
                         <div class="text-muted mt-3 small">- No aplica -</div>
                     <?php endif; ?>
+                </div>
+            </div>
+            <div class="border-top mt-3 pt-2 text-center">
+                <div class="conversion-info justify-content-center">
+                    <span><i class="fa-solid fa-circle-info me-1"></i> Tasas hoy:</span>
+                    <span>USD: <strong>$<?= number_format($tasa_tuya_usd, 0) ?></strong></span>
+                    <span>BRL: <strong>$<?= number_format($tasa_tuya_brl, 0) ?></strong></span>
                 </div>
             </div>
         </div>
@@ -410,11 +420,6 @@ if ($singleTour) {
         <button class="btn-filter" onclick="sortTours('ofertas', this)">Ofertas</button>
         <button class="btn-filter" onclick="sortTours('ninos', this)">Planes con niño</button>
     </div>
-
-    <div class="d-flex justify-content-center gap-3 mb-4 flex-wrap">
-        <span class="badge-tasa"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"><span class="fw-bold text-success">USD</span> $<?= number_format($tasa_tuya_usd, 0) ?></span>
-        <span class="badge-tasa"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"><span class="fw-bold text-primary">BRL</span> $<?= number_format($tasa_tuya_brl, 0) ?></span>
-    </div>
     
     <div class="row g-4" id="toursGrid">
         <?php foreach ($tours as $slug => $tour): 
@@ -454,6 +459,13 @@ if ($singleTour) {
                         </div>
                         <div class="text-primary fs-5"><i class="fa-solid fa-circle-arrow-right"></i></div>
                     </div>
+                    <div class="mt-2 pt-2 border-top-0">
+                        <div class="conversion-info">
+                            <span>Tasas:</span>
+                            <span>USD: <strong>$<?= number_format($tasa_tuya_usd, 0) ?></strong></span>
+                            <span>BRL: <strong>$<?= number_format($tasa_tuya_brl, 0) ?></strong></span>
+                        </div>
+                    </div>
                 </div>
             </a>
         </div>
@@ -477,7 +489,6 @@ if ($singleTour) {
             const grid = document.getElementById('toursGrid');
             const cards = Array.from(grid.getElementsByClassName('tour-card-col'));
 
-            // Lógica de filtrado exclusivo para ofertas
             if (criteria === 'ofertas') {
                 cards.forEach(card => {
                     if (card.dataset.oferta === '1') {
@@ -487,11 +498,9 @@ if ($singleTour) {
                     }
                 });
             } else {
-                // Para otros criterios, mostramos todos los que no estén filtrados por búsqueda
                 cards.forEach(card => card.style.display = '');
             }
 
-            // Lógica de ordenamiento
             cards.sort((a, b) => {
                 switch(criteria) {
                     case 'precio_min':
