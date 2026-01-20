@@ -196,6 +196,7 @@ if ($singleTour) {
         .conversion-info { font-size: 0.75rem; color: #777; display: flex; align-items: center; gap: 8px; }
         .conversion-info strong { color: #444; }
     </style>
+    <script async src="https://static.linguise.com/script-js/switcher.bundle.js?d=pk_gJW71rQjlMrHLZUpmLNObycZYW4VBhfB"></script>
 </head>
 <body>
 
