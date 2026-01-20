@@ -129,8 +129,8 @@ if ($singleTour) {
         .accordion-button:not(.collapsed) { background-color: #f1f8ff; color: #0d6efd; font-weight: 600; }
 
         h4 { font-weight: 800; color: #1a1a1a; letter-spacing: -0.5px; }
-        .price-cop-highlight { color: #1a1a1a; font-weight: 800; font-size: 1.4rem; }
-        .price-old { text-decoration: line-through; color: #999; font-size: 0.9rem; font-weight: normal; margin-right: 5px; }
+        .price-cop-highlight { color: #1a1a1a; font-weight: 800; font-size: 1.4rem; display: block; line-height: 1.1; }
+        .price-old { text-decoration: line-through; color: #999; font-size: 0.8rem; font-weight: normal; display: block; margin-bottom: 2px; }
         
         .flag-icon { width: 22px !important; height: auto; vertical-align: middle; margin-right: 6px; box-shadow: none; flex-shrink: 0; }
         
@@ -185,7 +185,6 @@ if ($singleTour) {
         }
         .btn-filter.active { background: #0d6efd; border-color: #0d6efd; color: white; }
 
-        /* ESTILO TASAS SUTILES */
         .conversion-info { font-size: 0.75rem; color: #777; display: flex; align-items: center; gap: 8px; }
         .conversion-info strong { color: #444; }
     </style>
@@ -232,29 +231,31 @@ if ($singleTour) {
 
         <div class="card card-price p-3 mb-4">
             <div class="row g-0 text-center">
-                <div class="col-6 border-end pe-2">
+                <div class="col-6 border-end pe-2 d-flex flex-column justify-content-center">
                     <span class="text-uppercase text-muted fw-bold" style="font-size:0.7rem;">Adulto <small class="fw-normal">(<?= $singleTour['rango_adulto'] ?? '' ?>)</small></span>
-                    <div class="price-cop-highlight my-1">
+                    <div class="my-1" style="min-height: 50px; display: flex; flex-direction: column; justify-content: center;">
                         <?php if($usarPromo): ?>
                             <span class="price-old">$<?= number_format($precioBase) ?></span>
                         <?php endif; ?>
-                        $<?= number_format($precioFinalCalc) ?>
+                        <span class="price-cop-highlight">$<?= number_format($precioFinalCalc) ?></span>
                     </div>
-                    <div class="d-flex flex-column gap-1">
+                    <div class="d-flex flex-column gap-1 mt-1">
                         <span class="price-usd small"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($precioFinalCalc / $tasa_tuya_usd) ?></span>
                         <span class="price-brl small"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$<?= precio_inteligente($precioFinalCalc / $tasa_tuya_brl) ?></span>
                     </div>
                 </div>
-                <div class="col-6 ps-2">
+                <div class="col-6 ps-2 d-flex flex-column justify-content-center">
                     <span class="text-uppercase text-muted fw-bold" style="font-size:0.7rem;">Niño <small class="fw-normal">(<?= $singleTour['rango_nino'] ?? '' ?>)</small></span>
                     <?php if(!empty($singleTour['precio_nino'])): ?>
-                        <div class="price-cop-highlight my-1">$<?= number_format($singleTour['precio_nino']) ?></div>
-                        <div class="d-flex flex-column gap-1">
+                        <div class="my-1" style="min-height: 50px; display: flex; flex-direction: column; justify-content: center;">
+                            <span class="price-cop-highlight">$<?= number_format($singleTour['precio_nino']) ?></span>
+                        </div>
+                        <div class="d-flex flex-column gap-1 mt-1">
                             <span class="price-usd small"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($singleTour['precio_nino'] / $tasa_tuya_usd) ?></span>
                             <span class="price-brl small"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$<?= precio_inteligente($singleTour['precio_nino'] / $tasa_tuya_brl) ?></span>
                         </div>
                     <?php else: ?>
-                        <div class="text-muted mt-3 small">- No aplica -</div>
+                        <div class="text-muted mt-3 small" style="min-height: 50px; display: flex; align-items: center; justify-content: center;">- No aplica -</div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -445,11 +446,13 @@ if ($singleTour) {
 
                 <div class="p-4">
                     <h6 class="fw-bold mb-3 text-dark lh-base tour-title"><?= htmlspecialchars($tour['nombre']) ?></h6>
-                    <div class="price-cop-highlight mb-3">
+                    <div class="mb-3" style="min-height: 55px; display: flex; flex-direction: column; justify-content: center;">
                         <?php if($esOferta): ?>
                             <span class="price-old">$<?= number_format($pBase) ?></span>
                         <?php endif; ?>
-                        $<?= number_format($pFinal) ?> <small class="fs-6 text-muted fw-normal">COP</small>
+                        <span class="price-cop-highlight">
+                            $<?= number_format($pFinal) ?> <small class="fs-6 text-muted fw-normal">COP</small>
+                        </span>
                         <?php if(!empty($tour['rango_adulto'])): ?><div style="font-size:0.7rem;color:#999;font-weight:normal">(Adultos <?= $tour['rango_adulto'] ?>)</div><?php endif; ?>
                     </div>
                     <div class="d-flex justify-content-between align-items-end mt-auto pt-3 border-top">
