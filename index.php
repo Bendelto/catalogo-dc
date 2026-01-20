@@ -1,10 +1,15 @@
 <?php
-// 1. CONFIGURACIÓN
+// 1. DETECTAR IDIOMA
+$lang = $_GET['lang'] ?? 'es';
+$dicFile = 'lang.json';
+$dicArr = json_decode(file_get_contents($dicFile), true);
+$dic = $dicArr[$lang] ?? $dicArr['es'];
+
+// CONFIGURACIÓN Y MONEDA
 $fileConfig = 'config.json';
 $config = file_exists($fileConfig) ? json_decode(file_get_contents($fileConfig), true) : ['margen_usd' => 200, 'margen_brl' => 200];
 $margen_usd = $config['margen_usd']; $margen_brl = $config['margen_brl'];
 
-// 2. MONEDA
 $cacheFile = 'tasa.json';
 if (!file_exists($cacheFile) || (time() - filemtime($cacheFile)) > 43200) {
     $response = @file_get_contents("https://open.er-api.com/v6/latest/COP");
@@ -18,7 +23,6 @@ function precio_inteligente($valor) { return (float)(ceil($valor * 2) / 2); }
 
 // 3. DATOS
 $tours = file_exists('data.json') ? json_decode(file_get_contents('data.json'), true) : [];
-uasort($tours, function($a, $b) { return strcasecmp($a['nombre'], $b['nombre']); });
 
 $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $base_path = dirname($_SERVER['SCRIPT_NAME']);
@@ -34,32 +38,29 @@ if (!empty($slug_solicitado) && isset($tours[$slug_solicitado])) {
 
 // 4. VARIABLES DE VISTA
 $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-$waLink = "";
 
 if ($singleTour) {
-    $desc = $singleTour['descripcion'] ?? $singleTour['description'] ?? '';
-    $inc = $singleTour['incluye'] ?? $singleTour['include'] ?? '';
-    $no_inc = $singleTour['no_incluye'] ?? $singleTour['not_include'] ?? '';
-    $horario = $singleTour['horario'] ?? $singleTour['schedule'] ?? '';
-    $punto = $singleTour['punto_encuentro'] ?? $singleTour['meeting_point'] ?? '';
+    $nombre = $singleTour["nombre_$lang"] ?? ($singleTour['nombre_es'] ?? ($singleTour['nombre'] ?? ''));
+    $desc = $singleTour["descripcion_$lang"] ?? ($singleTour['descripcion_es'] ?? ($singleTour['descripcion'] ?? ''));
+    $inc = $singleTour["incluye_$lang"] ?? ($singleTour['incluye_es'] ?? ($singleTour['incluye'] ?? ''));
+    $no_inc = $singleTour["no_incluye_$lang"] ?? ($singleTour['no_incluye_es'] ?? ($singleTour['no_incluye'] ?? ''));
+    $horario = $singleTour["horario_$lang"] ?? ($singleTour['horario_es'] ?? ($singleTour['horario'] ?? ''));
+    $punto = $singleTour["punto_encuentro_$lang"] ?? ($singleTour['punto_encuentro_es'] ?? ($singleTour['punto_encuentro'] ?? ''));
 
-    // PRECIOS
     $precioBase = $singleTour['precio_cop'];
     $precioPromo = $singleTour['precio_promo'] ?? 0;
     $usarPromo = ($precioPromo > 0 && $precioPromo < $precioBase);
     $precioFinalCalc = $usarPromo ? $precioPromo : $precioBase;
 
-    // SEO
-    $metaTitle = $singleTour['nombre'];
+    $metaTitle = $nombre;
     $metaDesc = !empty($desc) ? substr(strip_tags($desc), 0, 150) . "..." : "Reserva este tour en Cartagena.";
     if(!empty($singleTour['imagen'])) {
         $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
         $metaImage = $protocol . "://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']) . "/" . $singleTour['imagen'];
     }
 
-    // WHATSAPP
     $mensaje  = "Hola Descubre Cartagena, me gustaría reservar: \n\n";
-    $mensaje .= "📍 *" . $singleTour['nombre'] . "*\n";
+    $mensaje .= "📍 *" . $nombre . "*\n";
     $mensaje .= "🔗 " . $currentUrl;
     $waLink = "https://wa.me/573205899997?text=" . urlencode($mensaje);
 } else {
@@ -69,406 +70,154 @@ if ($singleTour) {
 ?>
 
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?= $lang ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
     <title><?= htmlspecialchars($metaTitle) ?></title>
-    <meta name="description" content="<?= htmlspecialchars($metaDesc) ?>">
-    
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="<?= $currentUrl ?>">
-    <meta property="og:title" content="<?= htmlspecialchars($metaTitle) ?>">
-    <meta property="og:description" content="<?= htmlspecialchars($metaDesc) ?>">
-    <?php if(isset($metaImage)): ?><meta property="og:image" content="<?= $metaImage ?>"><?php endif; ?>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
         body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #333; padding-bottom: 40px; }
-        .main-container { max-width: 1200px; margin: 0 auto; }
-        .calc-container { max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
+        .site-header { background-color: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.04); padding: 15px 0; text-align: center; margin-bottom: 30px; position: relative; }
+        .main-logo { width: 180px; max-width: 70%; height: auto; display: block; margin: 0 auto; }
+        @media (min-width: 992px) { .site-header { padding: 31.5px 0; } .main-logo { width: 288px; } }
         
-        .site-header {
-            background-color: #ffffff;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
-            padding: 15px 0;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .main-logo {
-            width: 180px;
-            max-width: 70%;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-        }
-
-        @media (min-width: 992px) {
-            .site-header { padding: 31.5px 0; }
-            .main-logo { width: 288px; }
-        }
+        .lang-switcher { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); display: flex; gap: 10px; }
+        .lang-switcher a { text-decoration: none; opacity: 0.5; font-size: 1.2rem; transition: 0.3s; }
+        .lang-switcher a.active { opacity: 1; transform: scale(1.1); }
 
         .card-price { border: 0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; position: relative; }
         .card-price:hover { transform: translateY(-5px); }
         .tour-img-list { width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid #f0f0f0; }
         .badge-oferta { position: absolute; top: 10px; right: 10px; background: #dc3545; color: white; padding: 5px 12px; border-radius: 50px; font-weight: 800; font-size: 0.75rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-
-        .gallery-reel-container { width: 100%; overflow-x: auto; display: flex; gap: 10px; padding-bottom: 10px; scroll-snap-type: x mandatory; margin-bottom: 15px; }
-        .gallery-reel-item { height: 38vh; width: auto; max-width: none; border-radius: 12px; scroll-snap-align: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: zoom-in; background: #fff; }
-        @media (min-width: 768px) { .gallery-reel-item { height: 350px; } }
-        
-        #lightbox { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; flex-direction: column; }
-        #lightbox img { max-width: 100%; max-height: 90vh; object-fit: contain; }
-        .lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; cursor: pointer; }
-
-        .info-box { background: white; padding: 25px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 2px 15px rgba(0,0,0,0.03); }
-        .list-check li { list-style: none; padding-left: 0; margin-bottom: 8px; font-size: 0.95rem; }
-        
-        .accordion-item { border: 0; border-radius: 12px !important; overflow: hidden; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .accordion-button:not(.collapsed) { background-color: #f1f8ff; color: #0d6efd; font-weight: 600; }
-
-        h4, h6, .tour-title { font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px; }
-        
-        .price-cop-highlight { color: #1a1a1a; font-weight: 700; font-size: 1.25rem; display: block; line-height: 1.1; }
-        .price-old { text-decoration: line-through; color: #999; font-size: 0.8rem; font-weight: 400; display: block; margin-bottom: 2px; }
-        
-        .flag-icon { width: 22px !important; height: auto; vertical-align: middle; margin-right: 6px; box-shadow: none; flex-shrink: 0; }
-        
-        .calc-box { background-color: #fff; border-radius: 12px; padding: 20px; border: 1px solid #edf2f7; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-        .form-control-qty { text-align: center; font-weight: bold; background: #f8f9fa; height: 50px; font-size: 1.3rem; font-family: 'Poppins', sans-serif; }
-        .total-display { background-color: #e7f1ff; color: #0d6efd; border: 1px solid #cce5ff; border-radius: 12px; padding: 20px; margin-top: 20px; }
-        
-        .btn-back { background-color: #e9ecef; color: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: bold; transition: transform 0.2s; }
-        .btn-back:active { transform: scale(0.9); }
-
-        .btn-share-native { background-color: #f8f9fa; color: #0d6efd; width: 40px; height: 40px; border-radius: 50%; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s; }
-        .btn-share-native:active { transform: scale(0.9); }
-
-        .btn-whatsapp-desktop { background-color: #25D366; color: white; font-weight: 700; border: none; border-radius: 50px; padding: 14px; text-decoration: none; display: block; text-align: center; transition: background 0.3s; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); }
-        .btn-whatsapp-desktop:hover { background-color: #1ebc57; color: white; }
-        
-        .btn-whatsapp-mobile { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 1050; background-color: #25D366; color: white; padding: 14px 30px; border-radius: 50px; box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4); font-weight: 700; font-size: 1rem; text-decoration: none; display: flex; align-items: center; gap: 10px; white-space: nowrap; transition: transform 0.2s; }
-        .btn-whatsapp-mobile:active { transform: translateX(-50%) scale(0.95); }
-
-        .btn-subtle { background-color: transparent; border: 1px solid #ced4da; color: #6c757d; border-radius: 50px; padding: 10px 20px; font-size: 0.9rem; width: 100%; display: block; text-align: center; text-decoration: none; transition: all 0.3s; margin-top: 20px; }
-        .btn-subtle:hover { background-color: #e9ecef; border-color: #adb5bd; color: #495057; }
-
-        .search-container { max-width: 500px; margin: 0 auto 15px auto; position: relative; }
-        .search-input { width: 100%; padding: 14px 20px 14px 50px; border-radius: 50px; border: 1px solid #eee; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.05); outline: none; transition: all 0.3s; font-size: 1rem; font-family: 'Poppins', sans-serif; }
-        .search-input:focus { border-color: #0d6efd; box-shadow: 0 8px 20px rgba(13, 110, 253, 0.1); }
-        .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #bbb; font-size: 1.1rem; }
-        
-        .filter-btn-group { 
-            display: flex; 
-            gap: 8px; 
-            overflow-x: auto; 
-            padding: 5px 15px 15px 15px; 
-            scrollbar-width: none; 
-            -ms-overflow-style: none; 
-            justify-content: flex-start;
-        }
-        @media (min-width: 768px) {
-            .filter-btn-group { justify-content: center; }
-        }
-        .filter-btn-group::-webkit-scrollbar { display: none; }
-        .btn-filter { 
-            background: white; 
-            border: 1px solid #dee2e6; 
-            color: #666; 
-            padding: 8px 16px; 
-            border-radius: 50px; 
-            font-size: 0.8rem; 
-            font-weight: 600; 
-            white-space: nowrap; 
-            transition: all 0.2s; 
-            flex-shrink: 0;
-            font-family: 'Poppins', sans-serif;
-        }
+        .price-cop-highlight { color: #1a1a1a; font-weight: 700; font-size: 1.25rem; line-height: 1.1; }
+        .price-old { text-decoration: line-through; color: #999; font-size: 0.8rem; font-weight: 400; margin-bottom: 2px; }
+        .flag-icon { width: 20px; vertical-align: middle; margin-right: 5px; }
+        .calc-box { background-color: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .btn-whatsapp-desktop { background-color: #25D366; color: white; font-weight: 700; border-radius: 50px; padding: 14px; text-decoration: none; display: block; text-align: center; }
+        .btn-whatsapp-mobile { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 1050; background-color: #25D366; color: white; padding: 14px 30px; border-radius: 50px; box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4); font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+        .filter-btn-group { display: flex; gap: 8px; overflow-x: auto; padding: 5px 15px 15px 15px; justify-content: flex-start; scrollbar-width: none; }
+        @media (min-width: 768px) { .filter-btn-group { justify-content: center; } }
+        .btn-filter { background: white; border: 1px solid #dee2e6; color: #666; padding: 8px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
         .btn-filter.active { background: #0d6efd; border-color: #0d6efd; color: white; }
-
-        .conversion-info { font-size: 0.75rem; color: #777; display: flex; align-items: center; gap: 8px; }
-        .conversion-info strong { color: #444; }
     </style>
 </head>
 <body>
 
 <div class="site-header">
     <div class="container">
-        <a href="./">
-            <img src="logo.svg" alt="Descubre Cartagena" class="main-logo">
-        </a>
+        <a href="./?lang=<?= $lang ?>"><img src="logo.svg" alt="Descubre Cartagena" class="main-logo"></a>
+        <div class="lang-switcher">
+            <a href="?lang=es" class="<?= $lang=='es'?'active':'' ?>">🇪🇸</a>
+            <a href="?lang=en" class="<?= $lang=='en'?'active':'' ?>">🇺🇸</a>
+            <a href="?lang=pt" class="<?= $lang=='pt'?'active':'' ?>">🇧🇷</a>
+        </div>
     </div>
 </div>
-
-<div id="lightbox" onclick="closeLightbox()"><div class="lightbox-close">&times;</div><img id="lightbox-img" src=""></div>
 
 <div class="container main-container">
 <?php if ($singleTour): ?>
     <div class="calc-container">
-        
-        <div class="d-flex align-items-center justify-content-between mb-4">
-            <div class="d-flex align-items-center gap-3" style="flex: 1;">
-                <a href="./" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
-                <h4 class="mb-0 lh-sm" style="font-size: 1.15rem;"><?= htmlspecialchars($singleTour['nombre']) ?></h4>
-            </div>
-            <button class="btn-share-native ms-2" onclick="shareNative()" title="Compartir">
-                <i class="fa-solid fa-share-nodes"></i>
-            </button>
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <a href="./?lang=<?= $lang ?>" class="btn btn-light rounded-circle"><i class="fa-solid fa-arrow-left"></i></a>
+            <h4 class="mb-0"><?= htmlspecialchars($nombre) ?></h4>
         </div>
 
-        <?php 
-            $imagenesParaMostrar = [];
-            if(!empty($singleTour['imagen'])) $imagenesParaMostrar[] = $singleTour['imagen'];
-            if(!empty($singleTour['galeria'])) foreach($singleTour['galeria'] as $gImg) $imagenesParaMostrar[] = $gImg;
-        ?>
-        <?php if(count($imagenesParaMostrar) > 0): ?>
-            <div class="gallery-reel-container">
-                <?php foreach($imagenesParaMostrar as $imgSrc): ?>
-                    <img src="<?= $imgSrc ?>" class="gallery-reel-item" onclick="openLightbox('<?= $imgSrc ?>')" alt="Foto">
-                <?php endforeach; ?>
-            </div>
-            <div class="text-center text-muted small mb-4" style="font-size:0.75rem;"><i class="fa-solid fa-hand-pointer"></i> Desliza o toca para ampliar</div>
-        <?php endif; ?>
-
-        <div class="card card-price p-3 mb-4">
-            <div class="row g-0 text-center">
-                <div class="col-6 border-end pe-2 d-flex flex-column justify-content-center">
-                    <span class="text-uppercase text-muted fw-bold" style="font-size:0.65rem;">Adulto <small class="fw-normal">(<?= $singleTour['rango_adulto'] ?? '' ?>)</small></span>
-                    <div class="my-1" style="min-height: 45px; display: flex; flex-direction: column; justify-content: center;">
-                        <?php if($usarPromo): ?>
-                            <span class="price-old">$<?= number_format($precioBase) ?></span>
-                        <?php endif; ?>
-                        <span class="price-cop-highlight">$<?= number_format($precioFinalCalc) ?></span>
+        <div class="card card-price p-3 mb-4 text-center">
+            <div class="row">
+                <div class="col-6 border-end">
+                    <span class="text-uppercase text-muted small fw-bold"><?= $dic['adulto'] ?> (<?= $singleTour['rango_adulto'] ?>)</span>
+                    <div class="my-2">
+                        <?php if($usarPromo): ?><div class="price-old">$<?= number_format($precioBase) ?></div><?php endif; ?>
+                        <div class="price-cop-highlight">$<?= number_format($precioFinalCalc) ?></div>
                     </div>
-                    <div class="d-flex flex-column gap-1 mt-1">
-                        <span class="price-usd small" style="font-size: 0.75rem;"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($precioFinalCalc / $tasa_tuya_usd) ?></span>
-                        <span class="price-brl small" style="font-size: 0.75rem;"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$<?= precio_inteligente($precioFinalCalc / $tasa_tuya_brl) ?></span>
+                    <div class="small text-muted">
+                        <div><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($precioFinalCalc / $tasa_tuya_usd) ?></div>
+                        <div><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$<?= precio_inteligente($precioFinalCalc / $tasa_tuya_brl) ?></div>
                     </div>
                 </div>
-                <div class="col-6 ps-2 d-flex flex-column justify-content-center">
-                    <span class="text-uppercase text-muted fw-bold" style="font-size:0.65rem;">Niño <small class="fw-normal">(<?= $singleTour['rango_nino'] ?? '' ?>)</small></span>
+                <div class="col-6">
+                    <span class="text-uppercase text-muted small fw-bold"><?= $dic['nino'] ?> (<?= $singleTour['rango_nino'] ?>)</span>
                     <?php if(!empty($singleTour['precio_nino'])): ?>
-                        <div class="my-1" style="min-height: 45px; display: flex; flex-direction: column; justify-content: center;">
-                            <span class="price-cop-highlight">$<?= number_format($singleTour['precio_nino']) ?></span>
+                        <div class="my-2"><div class="price-cop-highlight">$<?= number_format($singleTour['precio_nino']) ?></div></div>
+                        <div class="small text-muted">
+                            <div><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($singleTour['precio_nino'] / $tasa_tuya_usd) ?></div>
+                            <div><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$<?= precio_inteligente($singleTour['precio_nino'] / $tasa_tuya_brl) ?></div>
                         </div>
-                        <div class="d-flex flex-column gap-1 mt-1">
-                            <span class="price-usd small" style="font-size: 0.75rem;"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($singleTour['precio_nino'] / $tasa_tuya_usd) ?></span>
-                            <span class="price-brl small" style="font-size: 0.75rem;"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$<?= precio_inteligente($singleTour['precio_nino'] / $tasa_tuya_brl) ?></span>
-                        </div>
-                    <?php else: ?>
-                        <div class="text-muted mt-3 small" style="min-height: 45px; display: flex; align-items: center; justify-content: center;">- No aplica -</div>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <div class="border-top mt-3 pt-2 text-center">
-                <div class="conversion-info justify-content-center">
-                    <span><i class="fa-solid fa-circle-info me-1"></i> Tasas hoy:</span>
-                    <span>USD: <strong>$<?= number_format($tasa_tuya_usd, 0) ?></strong></span>
-                    <span>BRL: <strong>$<?= number_format($tasa_tuya_brl, 0) ?></strong></span>
+                    <?php else: ?><div class="mt-3 text-muted">-</div><?php endif; ?>
                 </div>
             </div>
         </div>
 
-        <div class="info-box">
-            <?php if(!empty($desc)): ?>
-                <div class="text-secondary mb-4" style="white-space: pre-line; line-height: 1.6; font-size: 0.9rem;">
-                    <?= htmlspecialchars($desc) ?>
-                </div>
-                <hr class="opacity-10 my-4">
-            <?php endif; ?>
-
-            <div class="row g-4">
-                <div class="col-12 col-md-6 border-bottom border-md-0 pb-3 pb-md-0">
-                    <h6 class="text-dark mb-3 small"><i class="fa-solid fa-circle-check text-success"></i> Incluye</h6>
-                    <ul class="list-check ps-0 m-0 text-secondary">
-                        <?php foreach(explode("\n", $inc) as $item): if(trim($item)=='')continue; ?>
-                            <li style="font-size: 0.85rem;"><i class="fa-solid fa-check text-success"></i> <?= htmlspecialchars($item) ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-                <div class="col-12 col-md-6">
-                    <h6 class="text-dark mb-3 small"><i class="fa-solid fa-circle-xmark text-danger"></i> No incluye</h6>
-                    <ul class="list-check ps-0 m-0 text-secondary">
-                        <?php foreach(explode("\n", $no_inc) as $item): if(trim($item)=='')continue; ?>
-                            <li style="font-size: 0.85rem;"><i class="fa-solid fa-xmark text-danger"></i> <?= htmlspecialchars($item) ?></li>
-                        <?php endforeach; ?>
-                    </ul>
+        <div class="calc-box mb-5">
+            <h6 class="text-center fw-bold mb-4"><?= $dic['calcular_total'] ?></h6>
+            <div class="row g-2 justify-content-center">
+                <div class="col-5 text-center"><label class="small fw-bold">ADULTOS</label><input type="number" id="qtyAdult" class="form-control text-center" value="1" min="1"></div>
+                <div class="col-5 text-center"><label class="small fw-bold">NIÑOS</label><input type="number" id="qtyKid" class="form-control text-center" value="0" min="0"></div>
+            </div>
+            <div class="bg-primary bg-opacity-10 rounded p-3 mt-4 text-center">
+                <div class="small text-primary fw-bold"><?= $dic['total_pagar'] ?></div>
+                <div class="fs-2 fw-bold" id="totalCOP">$0</div>
+                <div class="d-flex justify-content-center gap-4 mt-2">
+                    <div id="totalUSD" class="fw-bold text-success"></div>
+                    <div id="totalBRL" class="fw-bold text-primary"></div>
                 </div>
             </div>
+            <a href="<?= $waLink ?>" target="_blank" class="btn-whatsapp-desktop mt-4 shadow"><i class="fa-brands fa-whatsapp"></i> <?= $dic['btn_reserva'] ?></a>
         </div>
-
-        <?php if(!empty($horario) || !empty($punto)): ?>
-        <div class="accordion accordion-flush mb-4" id="accordionExtras">
-            <?php if(!empty($horario)): ?>
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed py-2 small" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHorario">
-                        <i class="fa-regular fa-clock me-2"></i> Horarios
-                    </button>
-                </h2>
-                <div id="collapseHorario" class="accordion-collapse collapse" data-bs-parent="#accordionExtras">
-                    <div class="accordion-body text-secondary" style="font-size: 0.85rem;">
-                        <ul class="list-unstyled m-0">
-                            <?php foreach(explode("\n", $horario) as $line): if(trim($line)=='')continue; ?>
-                                <li class="mb-2 d-flex align-items-start"><i class="fa-regular fa-clock text-primary mt-1 me-2"></i><span><?= htmlspecialchars($line) ?></span></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <?php endif; ?>
-
-            <?php if(!empty($punto)): ?>
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed py-2 small" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePunto">
-                        <i class="fa-solid fa-map-location-dot me-2"></i> Punto de Encuentro
-                    </button>
-                </h2>
-                <div id="collapsePunto" class="accordion-collapse collapse" data-bs-parent="#accordionExtras">
-                    <div class="accordion-body text-secondary" style="font-size: 0.85rem;">
-                        <ul class="list-unstyled m-0">
-                            <?php foreach(explode("\n", $punto) as $line): if(trim($line)=='')continue; ?>
-                                <li class="mb-2 d-flex align-items-start"><i class="fa-solid fa-map-pin text-danger mt-1 me-2"></i><span><?= htmlspecialchars($line) ?></span></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <?php endif; ?>
-        </div>
-        <?php endif; ?>
-
-        <div class="calc-box mb-4">
-            <h6 class="fw-bold mb-4 text-center text-secondary small"><i class="fa-solid fa-calculator me-2"></i>Calcular Total</h6>
-            <div class="row g-3 justify-content-center">
-                <div class="col-5"><label class="small text-muted mb-2 d-block text-center fw-bold" style="font-size: 0.65rem;">ADULTOS</label><input type="number" id="qtyAdult" class="form-control form-control-qty shadow-sm" value="1" min="1"></div>
-                <div class="col-5"><label class="small text-muted mb-2 d-block text-center fw-bold" style="font-size: 0.65rem;">NIÑOS</label><input type="number" id="qtyKid" class="form-control form-control-qty shadow-sm" value="0" min="0" <?= empty($singleTour['precio_nino']) ? 'disabled' : '' ?>></div>
-            </div>
-            <div class="total-display text-center">
-                <div class="small text-uppercase text-secondary mb-1 fw-bold" style="font-size: 0.7rem;">Total a Pagar</div>
-                <div class="fw-bold text-dark fs-2 lh-1 mb-3" id="totalCOP">$<?= number_format($precioFinalCalc) ?></div>
-                <div class="row pt-3 border-top border-primary-subtle">
-                    <div class="col-6 border-end border-primary-subtle"><div class="currency-tag text-success mb-1" style="font-size: 0.75rem;"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> Dollars</div><div class="fw-bold text-success fs-5" id="totalUSD">$0</div></div>
-                    <div class="col-6"><div class="currency-tag text-primary mb-1" style="font-size: 0.75rem;"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> Reais</div><div class="fw-bold text-primary fs-5" id="totalBRL">R$ 0</div></div>
-                </div>
-            </div>
-            
-            <div class="d-none d-md-block mt-4">
-                <a href="<?= $waLink ?>" target="_blank" class="btn-whatsapp-desktop shadow">
-                    <i class="fa-brands fa-whatsapp fa-lg me-2"></i> Reservar por WhatsApp
-                </a>
-            </div>
-        </div>
-
-        <a href="./" class="btn-subtle mb-5">Ver todos los tours</a>
-        
-        <a href="<?= $waLink ?>" target="_blank" class="btn-whatsapp-mobile d-md-none">
-            <i class="fa-brands fa-whatsapp fa-lg"></i> Reservar por WhatsApp
-        </a>
-
+        <a href="./?lang=<?= $lang ?>" class="btn btn-outline-secondary w-100 rounded-pill mb-5"><?= $dic['ver_tours'] ?></a>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const priceAdult = <?= $precioFinalCalc ?>;
-        const priceKid = <?= $singleTour['precio_nino'] ?: 0 ?>;
-        const rateUsd = <?= $tasa_tuya_usd ?>; const rateBrl = <?= $tasa_tuya_brl ?>;
-        const inputAdult = document.getElementById('qtyAdult');
-        const inputKid = document.getElementById('qtyKid');
-        const dCOP = document.getElementById('totalCOP');
-        const dUSD = document.getElementById('totalUSD');
-        const dBRL = document.getElementById('totalBRL');
-        function fmt(n){ return '$' + new Intl.NumberFormat('es-CO').format(n); }
-        function pInt(v){ return Math.ceil(v * 2) / 2; }
+        const pA = <?= $precioFinalCalc ?>; const pK = <?= $singleTour['precio_nino'] ?: 0 ?>;
+        const rU = <?= $tasa_tuya_usd ?>; const rB = <?= $tasa_tuya_brl ?>;
         function calc() {
-            let t = (parseInt(inputAdult.value)||0)*priceAdult + (parseInt(inputKid.value)||0)*priceKid;
-            dCOP.innerText = fmt(t);
-            dUSD.innerText = '$' + pInt(t/rateUsd);
-            dBRL.innerText = 'R$ ' + pInt(t/rateBrl);
+            const t = (document.getElementById('qtyAdult').value * pA) + (document.getElementById('qtyKid').value * pK);
+            document.getElementById('totalCOP').innerText = '$' + new Intl.NumberFormat('es-CO').format(t);
+            document.getElementById('totalUSD').innerText = 'USD $' + Math.ceil(t/rU);
+            document.getElementById('totalBRL').innerText = 'BRL R$' + Math.ceil(t/rB);
         }
-        inputAdult.addEventListener('input', calc); inputKid.addEventListener('input', calc);
-        calc();
-
-        const lightbox = document.getElementById('lightbox');
-        const lightboxImg = document.getElementById('lightbox-img');
-        function openLightbox(src) { lightboxImg.src = src; lightbox.style.display = 'flex'; }
-        function closeLightbox() { lightbox.style.display = 'none'; }
-
-        function shareNative() {
-            if (navigator.share) {
-                navigator.share({
-                    title: '<?= htmlspecialchars($singleTour['nombre']) ?>',
-                    text: '¡Mira este plan increíble en Cartagena!',
-                    url: window.location.href
-                }).catch(console.error);
-            } else {
-                navigator.clipboard.writeText(window.location.href).then(function() {
-                    alert("¡Enlace copiado! Compártelo con tus amigos.");
-                });
-            }
-        }
+        document.getElementById('qtyAdult').oninput = calc; document.getElementById('qtyKid').oninput = calc; calc();
     </script>
 
 <?php else: ?>
-    <div class="search-container">
-        <i class="fa-solid fa-magnifying-glass search-icon"></i>
-        <input type="text" id="searchTour" class="search-input" placeholder="¿Qué te gustaría hacer?">
+    <div class="search-container mb-4 position-relative">
+        <i class="fa-solid fa-magnifying-glass position-absolute" style="left:20px; top:50%; transform:translateY(-50%); color:#bbb;"></i>
+        <input type="text" id="searchTour" class="form-control rounded-pill py-3 ps-5" placeholder="<?= $dic['search_placeholder'] ?>">
     </div>
 
-    <div class="filter-btn-group">
-        <button class="btn-filter active" onclick="sortTours('nombre', this)">Nombre (A-Z)</button>
-        <button class="btn-filter" onclick="sortTours('precio_min', this)">Precio (Menor a mayor)</button>
-        <button class="btn-filter" onclick="sortTours('ofertas', this)">Ofertas</button>
-        <button class="btn-filter" onclick="sortTours('ninos', this)">Planes con niño</button>
+    <div class="filter-btn-group mb-4">
+        <button class="btn-filter active" onclick="sortTours('nombre', this)"><?= $dic['filter_all'] ?></button>
+        <button class="btn-filter" onclick="sortTours('precio_min', this)"><?= $dic['filter_price'] ?></button>
+        <button class="btn-filter" onclick="sortTours('ofertas', this)"><?= $dic['filter_promo'] ?></button>
+        <button class="btn-filter" onclick="sortTours('ninos', this)"><?= $dic['filter_kids'] ?></button>
     </div>
-    
+
     <div class="row g-4" id="toursGrid">
         <?php foreach ($tours as $slug => $tour): 
-            if(!empty($tour['oculto']) && $tour['oculto'] == true) continue;
-            
-            $pBase = $tour['precio_cop'];
-            $pPromo = $tour['precio_promo'] ?? 0;
-            $esOferta = ($pPromo > 0 && $pPromo < $pBase);
-            $pFinal = $esOferta ? $pPromo : $pBase;
-            $tienePrecioNino = (!empty($tour['precio_nino']) && $tour['precio_nino'] > 0);
+            if(!empty($tour['oculto'])) continue;
+            $tNombre = $tour["nombre_$lang"] ?? ($tour['nombre_es'] ?? ($tour['nombre'] ?? ''));
+            $pB = $tour['precio_cop']; $pP = $tour['precio_promo'] ?? 0;
+            $esO = ($pP > 0 && $pP < $pB); $pF = $esO ? $pP : $pB;
         ?>
-        <div class="col-12 col-md-6 col-lg-4 tour-card-col" 
-             data-nombre="<?= htmlspecialchars($tour['nombre']) ?>" 
-             data-precio="<?= $pFinal ?>"
-             data-oferta="<?= $esOferta ? '1' : '0' ?>"
-             data-nino="<?= $tienePrecioNino ? '1' : '0' ?>">
-            <a href="./<?= $slug ?>" class="card card-price">
+        <div class="col-12 col-md-6 col-lg-4 tour-card-col" data-nombre="<?= $tNombre ?>" data-precio="<?= $pF ?>" data-oferta="<?= $esO?'1':'0' ?>" data-nino="<?= !empty($tour['precio_nino'])?'1':'0' ?>">
+            <a href="./<?= $slug ?>?lang=<?= $lang ?>" class="card card-price">
                 <?php if(!empty($tour['imagen'])): ?><img src="<?= $tour['imagen'] ?>" class="tour-img-list"><?php endif; ?>
-                
-                <?php if($esOferta): ?>
-                    <span class="badge-oferta">OFERTA</span>
-                <?php endif; ?>
-
+                <?php if($esO): ?><span class="badge-oferta"><?= strtoupper($dic['filter_promo']) ?></span><?php endif; ?>
                 <div class="p-4">
-                    <h6 class="fw-bold mb-3 text-dark lh-base tour-title" style="font-size: 1.1rem;"><?= htmlspecialchars($tour['nombre']) ?></h6>
-                    <div class="mb-3" style="min-height: 50px; display: flex; flex-direction: column; justify-content: center;">
-                        <?php if($esOferta): ?>
-                            <span class="price-old" style="font-size: 0.75rem;">$<?= number_format($pBase) ?></span>
-                        <?php endif; ?>
-                        <span class="price-cop-highlight" style="font-size: 1.2rem;">
-                            $<?= number_format($pFinal) ?> <small class="text-muted fw-normal" style="font-size: 0.75rem;">COP</small>
-                        </span>
-                        <?php if(!empty($tour['rango_adulto'])): ?><div style="font-size:0.65rem;color:#999;font-weight:normal">(Adultos <?= $tour['rango_adulto'] ?>)</div><?php endif; ?>
+                    <h6 class="tour-title mb-3"><?= htmlspecialchars($tNombre) ?></h6>
+                    <div style="min-height:50px;">
+                        <?php if($esO): ?><div class="price-old">$<?= number_format($pB) ?></div><?php endif; ?>
+                        <div class="price-cop-highlight">$<?= number_format($pF) ?> <small class="text-muted fw-normal">COP</small></div>
                     </div>
-                    <div class="d-flex justify-content-between align-items-end mt-auto pt-3 border-top">
-                        <div class="d-flex flex-column gap-1">
-                            <div class="price-usd" style="font-size: 0.8rem;"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($pFinal / $tasa_tuya_usd) ?></div>
-                            <div class="price-brl" style="font-size: 0.8rem;"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$ <?= precio_inteligente($pFinal / $tasa_tuya_brl) ?></div>
+                    <div class="d-flex justify-content-between align-items-end mt-3 pt-3 border-top">
+                        <div class="small text-muted">
+                            <div><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($pF / $tasa_tuya_usd) ?></div>
+                            <div><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$<?= precio_inteligente($pF / $tasa_tuya_brl) ?></div>
                         </div>
-                        <div class="text-primary fs-5"><i class="fa-solid fa-circle-arrow-right"></i></div>
+                        <i class="fa-solid fa-circle-arrow-right text-primary fs-4"></i>
                     </div>
                 </div>
             </a>
@@ -477,53 +226,33 @@ if ($singleTour) {
     </div>
 
     <script>
-        document.getElementById('searchTour').addEventListener('keyup', function() {
-            let filter = this.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            let cards = document.querySelectorAll('.tour-card-col');
-            cards.forEach(function(card) {
-                let title = card.querySelector('.tour-title').textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                card.style.display = (title.indexOf(filter) > -1) ? '' : 'none';
+        // BUSCADOR CON NORMALIZACIÓN
+        document.getElementById('searchTour').onkeyup = function() {
+            let f = this.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            document.querySelectorAll('.tour-card-col').forEach(c => {
+                let t = c.dataset.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                c.style.display = t.includes(f) ? '' : 'none';
             });
-        });
+        };
 
         function sortTours(criteria, btn) {
             document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-
             const grid = document.getElementById('toursGrid');
             const cards = Array.from(grid.getElementsByClassName('tour-card-col'));
-
-            if (criteria === 'ofertas') {
-                cards.forEach(card => {
-                    if (card.dataset.oferta === '1') {
-                        card.style.display = '';
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-            } else {
-                cards.forEach(card => card.style.display = '');
-            }
+            
+            if(criteria === 'ofertas') cards.forEach(c => c.style.display = c.dataset.oferta === '1' ? '' : 'none');
+            else cards.forEach(c => c.style.display = '');
 
             cards.sort((a, b) => {
-                switch(criteria) {
-                    case 'precio_min':
-                        return parseFloat(a.dataset.precio) - parseFloat(b.dataset.precio);
-                    case 'ofertas':
-                        return b.dataset.oferta - a.dataset.oferta || a.dataset.nombre.localeCompare(b.dataset.nombre);
-                    case 'ninos':
-                        return b.dataset.nino - a.dataset.nino || a.dataset.nombre.localeCompare(b.dataset.nombre);
-                    case 'nombre':
-                    default:
-                        return a.dataset.nombre.localeCompare(b.dataset.nombre);
-                }
+                if(criteria === 'precio_min') return a.dataset.precio - b.dataset.precio;
+                if(criteria === 'ninos') return b.dataset.nino - a.dataset.nino;
+                return a.dataset.nombre.localeCompare(b.dataset.nombre);
             });
-
-            cards.forEach(card => grid.appendChild(card));
+            cards.forEach(c => grid.appendChild(c));
         }
     </script>
 <?php endif; ?>
-
 </div>
 </body>
 </html>
