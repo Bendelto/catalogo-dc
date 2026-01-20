@@ -29,61 +29,28 @@ if (!isset($_SESSION['admin'])) {
     <?php exit;
 }
 
-// 3. FUNCIÓN TRADUCCIÓN CON IA (CHATGPT)
-function traducirIA($texto, $idioma) {
-    $apiKey = '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'; // REEMPLAZA CON TU KEY
-    if($apiKey == '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') return "Error: Configura tu API Key";
-    
-    $target = ($idioma == 'en') ? 'Inglés Americano' : 'Portugués de Brasil';
-    
-    $ch = curl_init('https://api.openai.com/v1/chat/completions');
-    $postData = [
-        "model" => "gpt-4o-mini",
-        "messages" => [
-            ["role" => "system", "content" => "Eres un experto en turismo en Cartagena. Traduce el texto al $target con un tono vendedor y amable. Mantén el formato de saltos de línea."],
-            ["role" => "user", "content" => $texto]
-        ],
-        "temperature" => 0.3
-    ];
-    
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'Authorization: Bearer ' . $apiKey
-    ]);
-    
-    $response = curl_exec($ch);
-    $result = json_decode($response, true);
-    curl_close($ch);
-    
-    return $result['choices'][0]['message']['content'] ?? $texto;
-}
-
-// PROCESAR PETICIÓN AJAX DE TRADUCCIÓN
-if (isset($_POST['action']) && $_POST['action'] == 'translate') {
-    header('Content-Type: application/json');
-    $texto = $_POST['texto'];
-    echo json_encode([
-        'en' => traducirIA($texto, 'en'),
-        'pt' => traducirIA($texto, 'pt')
-    ]);
-    exit;
-}
-
-// 4. DATOS
+// 3. DATOS
 $fileTours = 'data.json';
 $fileConfig = 'config.json';
+
+// BACKUP
+if (isset($_GET['backup'])) {
+    if (file_exists($fileTours)) {
+        $jsonData = file_get_contents($fileTours);
+        $fecha = date('Y-m-d_H-i');
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="backup_'.$fecha.'.json"');
+        echo $jsonData;
+        exit;
+    }
+}
+
 $tours = file_exists($fileTours) ? json_decode(file_get_contents($fileTours), true) : [];
 $config = file_exists($fileConfig) ? json_decode(file_get_contents($fileConfig), true) : ['margen_usd' => 200, 'margen_brl' => 200];
 
-uasort($tours, function($a, $b) { 
-    $nomA = $a['nombre_es'] ?? ($a['nombre'] ?? '');
-    $nomB = $b['nombre_es'] ?? ($b['nombre'] ?? '');
-    return strcasecmp($nomA, $nomB); 
-});
+uasort($tours, function($a, $b) { return strcasecmp($a['nombre'], $b['nombre']); });
 
+// GUARDAR CONFIG
 if (isset($_POST['save_config'])) {
     $config['margen_usd'] = floatval($_POST['margen_usd']);
     $config['margen_brl'] = floatval($_POST['margen_brl']);
@@ -92,88 +59,134 @@ if (isset($_POST['save_config'])) {
     exit;
 }
 
+// OCULTAR / MOSTRAR
+if (isset($_GET['toggle_hide'])) {
+    $slugTarget = $_GET['toggle_hide'];
+    if (isset($tours[$slugTarget])) {
+        $estadoActual = $tours[$slugTarget]['oculto'] ?? false;
+        $tours[$slugTarget]['oculto'] = !$estadoActual;
+        file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    }
+    header("Location: admin.php");
+    exit;
+}
+
+// ==========================================
+//      LÓGICA DE GUARDADO (ADD/EDIT)
+// ==========================================
 if (isset($_POST['add'])) {
-    $nombre_es = $_POST['nombre_es'] ?? 'Sin nombre';
-    $slugInput = !empty($_POST['slug']) ? $_POST['slug'] : $nombre_es;
+    $nombre = $_POST['nombre'] ?? 'Sin nombre';
+    $slugInput = !empty($_POST['slug']) ? $_POST['slug'] : $nombre;
     $cleanSlug = strtolower(preg_replace('/[^A-Za-z0-9-]+/', '-', iconv('UTF-8', 'ASCII//TRANSLIT', $slugInput)));
     $cleanSlug = trim($cleanSlug, '-');
     $originalSlug = $_POST['original_slug'] ?? '';
 
+    // RECUPERAR DATOS ANTERIORES
     $datosAnteriores = [];
     if (!empty($originalSlug) && isset($tours[$originalSlug])) {
         $datosAnteriores = $tours[$originalSlug];
+    } elseif (isset($tours[$cleanSlug])) {
+        $datosAnteriores = $tours[$cleanSlug];
     }
 
+    // GESTIÓN DE GALERÍA (Borrado Individual)
     $galeriaActual = $datosAnteriores['galeria'] ?? [];
     if (isset($_POST['delete_imgs']) && is_array($_POST['delete_imgs'])) {
-        $galeriaActual = array_values(array_diff($galeriaActual, $_POST['delete_imgs']));
+        $galeriaActual = array_diff($galeriaActual, $_POST['delete_imgs']);
+        $galeriaActual = array_values($galeriaActual);
     }
 
+    // PREPARAR DATOS NUEVOS
     $nuevosDatos = [
-        'nombre_es' => $nombre_es,
-        'nombre_en' => $_POST['nombre_en'] ?? $nombre_es,
-        'nombre_pt' => $_POST['nombre_pt'] ?? $nombre_es,
+        'nombre' => $nombre,
         'precio_cop' => $_POST['precio'] ?? 0, 
         'precio_promo' => $_POST['precio_promo'] ?? 0, 
         'rango_adulto' => $_POST['rango_adulto'] ?? '',
         'precio_nino' => $_POST['precio_nino'] ?? 0,
         'rango_nino' => $_POST['rango_nino'] ?? '',
-        'descripcion_es' => $_POST['descripcion_es'] ?? '',
-        'descripcion_en' => $_POST['descripcion_en'] ?? '',
-        'descripcion_pt' => $_POST['descripcion_pt'] ?? '',
-        'incluye_es' => $_POST['incluye_es'] ?? '',
-        'incluye_en' => $_POST['incluye_en'] ?? '',
-        'incluye_pt' => $_POST['incluye_pt'] ?? '',
-        'no_incluye_es' => $_POST['no_incluye_es'] ?? '',
-        'no_incluye_en' => $_POST['no_incluye_en'] ?? '',
-        'no_incluye_pt' => $_POST['no_incluye_pt'] ?? '',
-        'horario_es' => $_POST['horario_es'] ?? '',
-        'horario_en' => $_POST['horario_en'] ?? '',
-        'horario_pt' => $_POST['horario_pt'] ?? '',
-        'punto_encuentro_es' => $_POST['punto_encuentro_es'] ?? '',
-        'punto_encuentro_en' => $_POST['punto_encuentro_en'] ?? '',
-        'punto_encuentro_pt' => $_POST['punto_encuentro_pt'] ?? '',
+        'descripcion' => $_POST['descripcion'] ?? '',
+        'incluye' => $_POST['incluye'] ?? '',
+        'no_incluye' => $_POST['no_incluye'] ?? '',
+        'horario' => $_POST['horario'] ?? '',
+        'punto_encuentro' => $_POST['punto_encuentro'] ?? '',
         'imagen' => $datosAnteriores['imagen'] ?? '', 
         'galeria' => $galeriaActual,
         'oculto' => $datosAnteriores['oculto'] ?? false
     ];
 
+    // PROCESAR PORTADA
     if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === 0) {
         $uploadDir = 'img/';
-        $filename = $cleanSlug . '-portada-' . time() . '.' . pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION);
-        if (move_uploaded_file($_FILES['imagen']['tmp_name'], $uploadDir . $filename)) $nuevosDatos['imagen'] = $uploadDir . $filename;
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+        $ext = pathinfo($_FILES['imagen']['name'], PATHINFO_EXTENSION);
+        $filename = $cleanSlug . '-portada-' . time() . '.' . $ext;
+        if (move_uploaded_file($_FILES['imagen']['tmp_name'], $uploadDir . $filename)) {
+            $nuevosDatos['imagen'] = $uploadDir . $filename;
+        }
     }
 
+    // PROCESAR GALERÍA (NUEVAS FOTOS)
     if (isset($_FILES['galeria'])) {
         $uploadDir = 'img/';
-        for ($i = 0; $i < count($_FILES['galeria']['name']); $i++) {
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+        $count = count($_FILES['galeria']['name']);
+        for ($i = 0; $i < $count; $i++) {
             if ($_FILES['galeria']['error'][$i] === 0) {
-                $filename = $cleanSlug . '-galeria-' . time() . '-' . $i . '.' . pathinfo($_FILES['galeria']['name'][$i], PATHINFO_EXTENSION);
-                if (move_uploaded_file($_FILES['galeria']['tmp_name'][$i], $uploadDir . $filename)) $nuevosDatos['galeria'][] = $uploadDir . $filename;
+                $ext = pathinfo($_FILES['galeria']['name'][$i], PATHINFO_EXTENSION);
+                $filename = $cleanSlug . '-galeria-' . time() . '-' . $i . '.' . $ext;
+                if (move_uploaded_file($_FILES['galeria']['tmp_name'][$i], $uploadDir . $filename)) {
+                    $nuevosDatos['galeria'][] = $uploadDir . $filename;
+                }
             }
         }
     }
 
-    if (!empty($originalSlug) && $originalSlug != $cleanSlug) unset($tours[$originalSlug]);
-    $tours[$cleanSlug] = $nuevosDatos;
+    if (!empty($originalSlug) && $originalSlug != $cleanSlug) {
+        if(isset($tours[$originalSlug])) unset($tours[$originalSlug]);
+    }
+    
+    $tours[$cleanSlug] = array_merge($datosAnteriores, $nuevosDatos);
     
     file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     header("Location: admin.php");
     exit;
 }
 
+// BORRAR
 if (isset($_GET['delete'])) {
-    unset($tours[$_GET['delete']]);
-    file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    $slugToDelete = $_GET['delete'];
+    if(isset($tours[$slugToDelete])) {
+        unset($tours[$slugToDelete]);
+        file_put_contents($fileTours, json_encode($tours, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    }
     header("Location: admin.php");
     exit;
 }
 
+if (isset($_GET['logout'])) { session_destroy(); header("Location: admin.php"); exit; }
+
+// CARGAR PARA EDITAR
 $tourToEdit = null;
 $editingSlug = '';
 if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
-    $tourToEdit = $tours[$_GET['edit']];
+    $d = $tours[$_GET['edit']];
     $editingSlug = $_GET['edit'];
+    
+    $tourToEdit = [
+        'nombre' => $d['nombre'] ?? '',
+        'precio_cop' => $d['precio_cop'] ?? '',
+        'precio_promo' => $d['precio_promo'] ?? '',
+        'rango_adulto' => $d['rango_adulto'] ?? '',
+        'precio_nino' => $d['precio_nino'] ?? '',
+        'rango_nino' => $d['rango_nino'] ?? '',
+        'descripcion' => $d['descripcion'] ?? ($d['description'] ?? ''),
+        'incluye' => $d['incluye'] ?? ($d['include'] ?? ''),
+        'no_incluye' => $d['no_incluye'] ?? ($d['not_include'] ?? ''),
+        'horario' => $d['horario'] ?? ($d['schedule'] ?? ''),
+        'punto_encuentro' => $d['punto_encuentro'] ?? ($d['meeting_point'] ?? ''),
+        'imagen' => $d['imagen'] ?? '',
+        'galeria' => $d['galeria'] ?? []
+    ];
 }
 ?>
 
@@ -181,105 +194,183 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin Multilenguaje</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Panel Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background-color: #f8f9fa; padding-bottom: 50px; }
-        .nav-tabs .nav-link { font-weight: bold; color: #666; }
-        .nav-tabs .nav-link.active { color: #0d6efd; border-bottom: 3px solid #0d6efd; }
-        .translate-btn { cursor: pointer; color: #0d6efd; font-size: 0.8rem; text-decoration: underline; }
+        body { padding-bottom: 50px; background-color: #f8f9fa; }
         .img-preview-mini { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
-        .gallery-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; margin: 2px; }
-        .ai-loading { display: none; margin-left: 10px; font-style: italic; color: #d63384; font-size: 0.8rem; }
+        .gallery-thumb-container { display: inline-block; margin: 5px; text-align: center; background: white; padding: 5px; border-radius: 6px; border: 1px solid #ddd; }
+        .gallery-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; display: block; margin-bottom: 3px; }
+        .btn-group-action { display: flex; gap: 5px; justify-content: flex-end; }
+        @media (max-width: 576px) { .btn-group-action { flex-direction: column; } .btn-group-action .btn { width: 100%; } }
+        .row-hidden { background-color: #e9ecef; opacity: 0.75; }
+        .row-hidden td { color: #6c757d; }
+        /* Badge para conteo de fotos */
+        .badge-gallery { font-size: 0.65rem; background-color: #e7f1ff; color: #0d6efd; border: 1px solid #cce5ff; }
     </style>
 </head>
 <body class="container py-4">
-
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Panel de Control (ML)</h2>
-        <a href="?logout=1" class="btn btn-outline-secondary btn-sm">Salir</a>
+        <div><h2 class="fw-bold mb-0">Panel de Control</h2></div>
+        <div class="d-flex gap-2">
+            <a href="?backup=1" class="btn btn-success btn-sm fw-bold">Backup</a>
+            <a href="index.php" target="_blank" class="btn btn-outline-primary btn-sm fw-bold">Web</a>
+            <a href="?logout=1" class="btn btn-outline-secondary btn-sm">Salir</a>
+        </div>
+    </div>
+
+    <div class="card mb-4 border-warning shadow-sm">
+        <div class="card-header bg-warning text-dark fw-bold">Tasa</div>
+        <div class="card-body py-2">
+            <form method="post" class="row g-2 align-items-end">
+                <div class="col-5"><label class="small fw-bold">-$ Dólar</label><input type="number" name="margen_usd" class="form-control form-control-sm" value="<?= $config['margen_usd'] ?>"></div>
+                <div class="col-5"><label class="small fw-bold">-$ Real</label><input type="number" name="margen_brl" class="form-control form-control-sm" value="<?= $config['margen_brl'] ?>"></div>
+                <div class="col-2"><button type="submit" name="save_config" class="btn btn-dark btn-sm w-100">OK</button></div>
+            </form>
+        </div>
     </div>
 
     <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <span class="fw-bold"><?= $tourToEdit ? '✏️ Editando Tour' : '➕ Nuevo Tour' ?></span>
-            <?php if($tourToEdit): ?><a href="admin.php" class="btn btn-sm btn-light">Cancelar</a><?php endif; ?>
+        <div class="card-header bg-primary text-white">
+            <span class="fw-bold"><?= $tourToEdit ? '✏️ Editando' : '➕ Nuevo' ?></span>
+            <?php if($tourToEdit): ?><a href="admin.php" class="btn btn-sm btn-light float-end py-0">Cancelar</a><?php endif; ?>
         </div>
         <div class="card-body">
-            <form method="post" id="tourForm" enctype="multipart/form-data">
+            <form method="post" class="row g-3" enctype="multipart/form-data">
                 <input type="hidden" name="original_slug" value="<?= $editingSlug ?>">
+
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Nombre</label>
+                    <input type="text" name="nombre" id="inputNombre" class="form-control" required value="<?= htmlspecialchars($tourToEdit['nombre'] ?? '') ?>">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Slug</label>
+                    <input type="text" name="slug" id="inputSlug" class="form-control bg-light text-muted" value="<?= $editingSlug ?>">
+                </div>
+
+                <div class="col-md-6 border-end">
+                    <label class="form-label small fw-bold">Portada</label>
+                    <input type="file" name="imagen" class="form-control" accept="image/*">
+                    <?php if(!empty($tourToEdit['imagen'])): ?>
+                        <div class="mt-1"><img src="<?= $tourToEdit['imagen'] ?>" class="img-preview-mini"> <small class="text-success">Guardada</small></div>
+                    <?php endif; ?>
+                </div>
                 
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">Slug (URL)</label>
-                        <input type="text" name="slug" id="inputSlug" class="form-control" value="<?= $editingSlug ?>">
-                    </div>
-                    <div class="col-md-3 col-6">
-                        <label class="form-label small fw-bold">Precio Adulto</label>
-                        <input type="number" name="precio" class="form-control" required value="<?= $tourToEdit['precio_cop'] ?? '' ?>">
-                    </div>
-                    <div class="col-md-3 col-6">
-                        <label class="form-label small fw-bold">Precio Niño</label>
-                        <input type="number" name="precio_nino" class="form-control" value="<?= $tourToEdit['precio_nino'] ?? '' ?>">
-                    </div>
-                </div>
-
-                <ul class="nav nav-tabs mb-3" id="langTabs" role="tablist">
-                    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-es" type="button">Español 🇪🇸</button></li>
-                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-en" type="button">English 🇺🇸</button></li>
-                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pt" type="button">Português 🇧🇷</button></li>
-                    <li class="ms-auto"><span class="translate-btn" onclick="autoTranslateAll()"><i class="fa-solid fa-wand-sparkles"></i> Traducir todo con IA</span><span class="ai-loading" id="ai-loading">Traduciendo...</span></li>
-                </ul>
-
-                <div class="tab-content" id="langTabsContent">
-                    <div class="tab-pane fade show active" id="tab-es">
-                        <div class="row g-3">
-                            <div class="col-12"><label class="form-label small fw-bold">Nombre</label><input type="text" name="nombre_es" id="nombre_es" class="form-control" value="<?= htmlspecialchars($tourToEdit['nombre_es'] ?? ($tourToEdit['nombre'] ?? '')) ?>"></div>
-                            <div class="col-12"><label class="form-label small fw-bold">Descripción</label><textarea name="descripcion_es" id="descripcion_es" class="form-control" rows="3"><?= htmlspecialchars($tourToEdit['descripcion_es'] ?? ($tourToEdit['descripcion'] ?? '')) ?></textarea></div>
-                            <div class="col-md-6"><label class="form-label small fw-bold">Incluye</label><textarea name="incluye_es" id="incluye_es" class="form-control" rows="3"><?= htmlspecialchars($tourToEdit['incluye_es'] ?? ($tourToEdit['incluye'] ?? '')) ?></textarea></div>
-                            <div class="col-md-6"><label class="form-label small fw-bold">No Incluye</label><textarea name="no_incluye_es" id="no_incluye_es" class="form-control" rows="3"><?= htmlspecialchars($tourToEdit['no_incluye_es'] ?? ($tourToEdit['no_incluye'] ?? '')) ?></textarea></div>
-                        </div>
-                    </div>
-                    <div class="tab-pane fade" id="tab-en">
-                        <div class="row g-3">
-                            <div class="col-12"><label class="form-label small fw-bold">Nombre (EN)</label><input type="text" name="nombre_en" id="nombre_en" class="form-control" value="<?= htmlspecialchars($tourToEdit['nombre_en'] ?? '') ?>"></div>
-                            <div class="col-12"><label class="form-label small fw-bold">Descripción (EN)</label><textarea name="descripcion_en" id="descripcion_en" class="form-control" rows="3"><?= htmlspecialchars($tourToEdit['descripcion_en'] ?? '') ?></textarea></div>
-                            <div class="col-md-6"><label class="form-label small fw-bold">Incluye (EN)</label><textarea name="incluye_en" id="incluye_en" class="form-control" rows="3"><?= htmlspecialchars($tourToEdit['incluye_en'] ?? '') ?></textarea></div>
-                            <div class="col-md-6"><label class="form-label small fw-bold">No Incluye (EN)</label><textarea name="no_incluye_en" id="no_incluye_en" class="form-control" rows="3"><?= htmlspecialchars($tourToEdit['no_incluye_en'] ?? '') ?></textarea></div>
-                        </div>
-                    </div>
-                    <div class="tab-pane fade" id="tab-pt">
-                        <div class="row g-3">
-                            <div class="col-12"><label class="form-label small fw-bold">Nombre (PT)</label><input type="text" name="nombre_pt" id="nombre_pt" class="form-control" value="<?= htmlspecialchars($tourToEdit['nombre_pt'] ?? '') ?>"></div>
-                            <div class="col-12"><label class="form-label small fw-bold">Descripción (PT)</label><textarea name="descripcion_pt" id="descripcion_pt" class="form-control" rows="3"><?= htmlspecialchars($tourToEdit['descripcion_pt'] ?? '') ?></textarea></div>
-                            <div class="col-md-6"><label class="form-label small fw-bold">Incluye (PT)</label><textarea name="incluye_pt" id="incluye_pt" class="form-control" rows="3"><?= htmlspecialchars($tourToEdit['incluye_pt'] ?? '') ?></textarea></div>
-                            <div class="col-md-6"><label class="form-label small fw-bold">No Incluye (PT)</label><textarea name="no_incluye_pt" id="no_incluye_pt" class="form-control" rows="3"><?= htmlspecialchars($tourToEdit['no_incluye_pt'] ?? '') ?></textarea></div>
-                        </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold text-primary">Galería</label>
+                    <input type="file" name="galeria[]" class="form-control" accept="image/*" multiple>
+                    <div class="mt-2">
+                        <?php if(!empty($tourToEdit['galeria'])): ?>
+                            <small class="d-block text-muted mb-1">Selecciona para borrar:</small>
+                            <?php foreach($tourToEdit['galeria'] as $g): ?>
+                                <div class="gallery-thumb-container">
+                                    <img src="<?= $g ?>" class="gallery-thumb">
+                                    <input type="checkbox" name="delete_imgs[]" value="<?= $g ?>" title="Borrar esta foto"> 🗑️
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
                 </div>
 
-                <div class="row mt-4">
-                    <div class="col-md-6"><label class="form-label small fw-bold">Portada</label><input type="file" name="imagen" class="form-control"></div>
-                    <div class="col-md-6"><label class="form-label small fw-bold">Galería</label><input type="file" name="galeria[]" class="form-control" multiple></div>
+                <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small fw-bold">Información</h6></div>
+                
+                <div class="col-12">
+                    <label class="small fw-bold">Descripción</label>
+                    <textarea name="descripcion" class="form-control" rows="3"><?= htmlspecialchars($tourToEdit['descripcion'] ?? '') ?></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="small fw-bold text-success">Incluye</label>
+                    <textarea name="incluye" class="form-control bg-success bg-opacity-10" rows="4"><?= htmlspecialchars($tourToEdit['incluye'] ?? '') ?></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="small fw-bold text-danger">No Incluye</label>
+                    <textarea name="no_incluye" class="form-control bg-danger bg-opacity-10" rows="4"><?= htmlspecialchars($tourToEdit['no_incluye'] ?? '') ?></textarea>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="small fw-bold">Horario</label>
+                    <textarea name="horario" class="form-control" rows="2"><?= htmlspecialchars($tourToEdit['horario'] ?? '') ?></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="small fw-bold">Punto Encuentro</label>
+                    <textarea name="punto_encuentro" class="form-control" rows="2"><?= htmlspecialchars($tourToEdit['punto_encuentro'] ?? '') ?></textarea>
                 </div>
 
-                <div class="mt-4"><button type="submit" name="add" class="btn btn-success w-100 fw-bold">GUARDAR TOUR</button></div>
+                <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small fw-bold">Precios y Edades</h6></div>
+                
+                <div class="col-6 col-md-4">
+                    <label class="small fw-bold text-dark">Precio Adultos</label>
+                    <input type="number" name="precio" class="form-control" required value="<?= $tourToEdit['precio_cop'] ?? '' ?>">
+                </div>
+                <div class="col-6 col-md-4">
+                    <label class="small fw-bold text-dark">Precio Niños</label>
+                    <input type="number" name="precio_nino" class="form-control" value="<?= $tourToEdit['precio_nino'] ?? '' ?>">
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="small fw-bold text-danger">Precio de promoción</label>
+                    <input type="number" name="precio_promo" class="form-control border-danger" placeholder="Opcional" value="<?= $tourToEdit['precio_promo'] ?? '' ?>">
+                    <small class="text-muted" style="font-size:0.65rem;">Si lo llenas, este será el precio a pagar.</small>
+                </div>
+
+                <div class="col-6">
+                    <label class="small fw-bold text-muted">Edad Adultos</label>
+                    <input type="text" name="rango_adulto" class="form-control bg-light" value="<?= htmlspecialchars($tourToEdit['rango_adulto'] ?? '') ?>">
+                </div>
+                <div class="col-6">
+                    <label class="small fw-bold text-muted">Edad Niños</label>
+                    <input type="text" name="rango_nino" class="form-control bg-light" value="<?= htmlspecialchars($tourToEdit['rango_nino'] ?? '') ?>">
+                </div>
+
+                <div class="col-12 mt-4"><button type="submit" name="add" class="btn btn-primary w-100 fw-bold">Guardar Cambios</button></div>
             </form>
         </div>
     </div>
 
     <div class="table-responsive">
-        <table class="table table-white shadow-sm rounded">
-            <thead><tr><th>Tour</th><th class="text-end">Acciones</th></tr></thead>
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light"><tr><th class="ps-3">Tour</th><th class="text-end pe-3">Acción</th></tr></thead>
             <tbody>
-                <?php foreach($tours as $slug => $tour): ?>
-                <tr>
-                    <td><?= htmlspecialchars($tour['nombre_es'] ?? ($tour['nombre'] ?? '')) ?></td>
-                    <td class="text-end">
-                        <a href="?edit=<?= $slug ?>" class="btn btn-sm btn-warning">Editar</a>
-                        <a href="?delete=<?= $slug ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Borrar?')">X</a>
+                <?php foreach ($tours as $slug => $tour): 
+                    $estaOculto = isset($tour['oculto']) && $tour['oculto'] == true;
+                    // Contar fotos galería
+                    $cntFotos = (!empty($tour['galeria']) && is_array($tour['galeria'])) ? count($tour['galeria']) : 0;
+                ?>
+                <tr class="<?= $slug == $editingSlug ? 'table-warning' : '' ?> <?= $estaOculto ? 'row-hidden' : '' ?>">
+                    <td class="ps-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <?php if(!empty($tour['imagen'])): ?>
+                                <img src="<?= $tour['imagen'] ?>" class="rounded" style="width: 45px; height: 45px; object-fit: cover;">
+                            <?php else: ?>
+                                <div class="rounded bg-light d-flex align-items-center justify-content-center text-muted border" style="width: 45px; height: 45px;"><i class="fa-regular fa-image"></i></div>
+                            <?php endif; ?>
+
+                            <div>
+                                <div class="d-flex align-items-center flex-wrap gap-1">
+                                    <?php if($estaOculto): ?><span class="badge bg-secondary" style="font-size:0.6rem">Oculto</span><?php endif; ?>
+                                    <span class="fw-bold d-block text-truncate" style="max-width: 250px;"><?= htmlspecialchars($tour['nombre']) ?></span>
+                                </div>
+                                <div class="small d-flex align-items-center gap-2">
+                                    <span class="text-muted">$<?= number_format($tour['precio_cop']) ?></span>
+                                    <?php if($cntFotos > 0): ?>
+                                        <span class="badge badge-gallery"><i class="fa-solid fa-camera"></i> +<?= $cntFotos ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-end pe-3">
+                        <div class="btn-group-action">
+                            <?php if($estaOculto): ?>
+                                <a href="?toggle_hide=<?= $slug ?>" class="btn btn-success btn-sm text-white">Mostrar</a>
+                            <?php else: ?>
+                                <a href="?toggle_hide=<?= $slug ?>" class="btn btn-secondary btn-sm text-white">Ocultar</a>
+                            <?php endif; ?>
+                            <a href="?edit=<?= $slug ?>" class="btn btn-warning btn-sm text-dark">Editar</a>
+                            <a href="?delete=<?= $slug ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Borrar este tour permanentemente?');">Borrar</a>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -287,34 +378,22 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         </table>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // TRADUCCIÓN AUTOMÁTICA AJAX
-        async function autoTranslateAll() {
-            const fields = ['nombre', 'descripcion', 'incluye', 'no_incluye'];
-            const esValues = {};
-            fields.forEach(f => esValues[f] = document.getElementById(f + '_es').value);
-            
-            if(!esValues['nombre']) { alert("Escribe al menos el nombre en español"); return; }
-            
-            document.getElementById('ai-loading').style.display = 'inline';
-            
-            for(const field of fields) {
-                const val = esValues[field];
-                if(!val) continue;
-                
-                const formData = new FormData();
-                formData.append('action', 'translate');
-                formData.append('texto', val);
-                
-                try {
-                    const response = await fetch('admin.php', { method: 'POST', body: formData });
-                    const data = await response.json();
-                    document.getElementById(field + '_en').value = data.en;
-                    document.getElementById(field + '_pt').value = data.pt;
-                } catch(e) { console.error(e); }
-            }
-            document.getElementById('ai-loading').style.display = 'none';
+        const inputNombre = document.getElementById('inputNombre');
+        const inputSlug = document.getElementById('inputSlug');
+
+        if (inputNombre && inputSlug) {
+            let slugManual = false;
+            if (inputSlug.value.trim() !== '') { slugManual = true; }
+
+            inputNombre.addEventListener('input', function () {
+                if (!slugManual || inputSlug.value === '') {
+                    let texto = this.value.trim();
+                    let slug = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').replace(/-+/g, '-');
+                    inputSlug.value = slug;
+                }
+            });
+            inputSlug.addEventListener('input', function() { slugManual = true; });
         }
     </script>
 </body>
