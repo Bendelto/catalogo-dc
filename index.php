@@ -134,10 +134,8 @@ if ($singleTour) {
         .accordion-item { border: 0; border-radius: 12px !important; overflow: hidden; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .accordion-button:not(.collapsed) { background-color: #f1f8ff; color: #0d6efd; font-weight: 600; }
 
-        /* AJUSTE DE GROSOR EN TÍTULOS */
         h4, h6, .tour-title { font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px; }
         
-        /* AJUSTE DE TAMAÑO Y GROSOR EN PRECIOS */
         .price-cop-highlight { color: #1a1a1a; font-weight: 700; font-size: 1.25rem; display: block; line-height: 1.1; }
         .price-old { text-decoration: line-through; color: #999; font-size: 0.8rem; font-weight: 400; display: block; margin-bottom: 2px; }
         
@@ -471,13 +469,6 @@ if ($singleTour) {
                             <div class="price-brl" style="font-size: 0.8rem;"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$ <?= precio_inteligente($pFinal / $tasa_tuya_brl) ?></div>
                         </div>
                         <div class="text-primary fs-5"><i class="fa-solid fa-circle-arrow-right"></i></div>
-                    </div>
-                    <div class="mt-2 pt-2">
-                        <div class="conversion-info" style="font-size: 0.65rem;">
-                            <span>Tasas:</span>
-                            <span>USD: <strong>$<?= number_format($tasa_tuya_usd, 0) ?></strong></span>
-                            <span>BRL: <strong>$<?= number_format($tasa_tuya_brl, 0) ?></strong></span>
-                        </div>
                     </div>
                 </div>
             </a>
