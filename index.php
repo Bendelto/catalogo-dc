@@ -159,9 +159,32 @@ if ($singleTour) {
         .search-input:focus { border-color: #0d6efd; box-shadow: 0 8px 20px rgba(13, 110, 253, 0.1); }
         .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #bbb; font-size: 1.1rem; }
         
-        .filter-btn-group { display: flex; gap: 8px; overflow-x: auto; padding: 5px 0 15px 0; scrollbar-width: none; -ms-overflow-style: none; justify-content: center; }
+        /* FILTROS MEJORADOS PARA MÓVIL */
+        .filter-btn-group { 
+            display: flex; 
+            gap: 8px; 
+            overflow-x: auto; 
+            padding: 5px 15px 15px 15px; 
+            scrollbar-width: none; 
+            -ms-overflow-style: none; 
+            justify-content: flex-start;
+        }
+        @media (min-width: 768px) {
+            .filter-btn-group { justify-content: center; }
+        }
         .filter-btn-group::-webkit-scrollbar { display: none; }
-        .btn-filter { background: white; border: 1px solid #dee2e6; color: #666; padding: 6px 15px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; white-space: nowrap; transition: all 0.2s; }
+        .btn-filter { 
+            background: white; 
+            border: 1px solid #dee2e6; 
+            color: #666; 
+            padding: 8px 16px; 
+            border-radius: 50px; 
+            font-size: 0.8rem; 
+            font-weight: 600; 
+            white-space: nowrap; 
+            transition: all 0.2s; 
+            flex-shrink: 0;
+        }
         .btn-filter.active { background: #0d6efd; border-color: #0d6efd; color: white; }
     </style>
 </head>
@@ -382,11 +405,11 @@ if ($singleTour) {
         <input type="text" id="searchTour" class="search-input" placeholder="¿Qué te gustaría hacer? (Ej: Isla, Noche, Bote)">
     </div>
 
-    <div class="filter-btn-group px-2">
-        <button class="btn-filter active" onclick="sortTours('nombre')">Nombre (A-Z)</button>
-        <button class="btn-filter" onclick="sortTours('precio_min')">Precio (Menor a mayor)</button>
-        <button class="btn-filter" onclick="sortTours('ofertas')">Ofertas</button>
-        <button class="btn-filter" onclick="sortTours('ninos')">Planes con niño</button>
+    <div class="filter-btn-group">
+        <button class="btn-filter active" onclick="sortTours('nombre', this)">Nombre (A-Z)</button>
+        <button class="btn-filter" onclick="sortTours('precio_min', this)">Precio (Menor a mayor)</button>
+        <button class="btn-filter" onclick="sortTours('ofertas', this)">Ofertas</button>
+        <button class="btn-filter" onclick="sortTours('ninos', this)">Planes con niño</button>
     </div>
 
     <div class="d-flex justify-content-center gap-3 mb-4 flex-wrap">
@@ -448,9 +471,9 @@ if ($singleTour) {
             });
         });
 
-        function sortTours(criteria) {
-            document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+        function sortTours(criteria, btn) {
+            document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
 
             const grid = document.getElementById('toursGrid');
             const cards = Array.from(grid.getElementsByClassName('tour-card-col'));
