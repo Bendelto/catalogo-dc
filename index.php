@@ -91,10 +91,9 @@ if ($singleTour) {
         .main-container { max-width: 1200px; margin: 0 auto; }
         .calc-container { max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
         
-        /* HEADER MINIMALISTA (NUEVO) */
         .site-header {
             background-color: #ffffff;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.04); /* Sombra sutil */
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
             padding: 15px 0;
             position: sticky;
             top: 0;
@@ -110,13 +109,11 @@ if ($singleTour) {
             margin: 0 auto;
         }
 
-        /* TARJETAS */
         .card-price { border: 0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; position: relative; }
         .card-price:hover { transform: translateY(-5px); }
         .tour-img-list { width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid #f0f0f0; }
         .badge-oferta { position: absolute; top: 10px; right: 10px; background: #dc3545; color: white; padding: 5px 12px; border-radius: 50px; font-weight: 800; font-size: 0.75rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
-        /* GALERÍA */
         .gallery-reel-container { width: 100%; overflow-x: auto; display: flex; gap: 10px; padding-bottom: 10px; scroll-snap-type: x mandatory; margin-bottom: 15px; }
         .gallery-reel-item { height: 38vh; width: auto; max-width: none; border-radius: 12px; scroll-snap-align: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: zoom-in; background: #fff; }
         @media (min-width: 768px) { .gallery-reel-item { height: 350px; } }
@@ -135,7 +132,6 @@ if ($singleTour) {
         .price-cop-highlight { color: #1a1a1a; font-weight: 800; font-size: 1.4rem; }
         .price-old { text-decoration: line-through; color: #999; font-size: 0.9rem; font-weight: normal; margin-right: 5px; }
         
-        /* BANDERAS ARREGLADAS */
         .flag-icon { width: 22px !important; height: auto; vertical-align: middle; margin-right: 6px; box-shadow: none; flex-shrink: 0; }
         .badge-tasa { font-size: 0.85rem; background: #fff; border: 1px solid #dee2e6; color: #555; padding: 8px 16px; border-radius: 50px; display: inline-flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         
@@ -143,7 +139,6 @@ if ($singleTour) {
         .form-control-qty { text-align: center; font-weight: bold; background: #f8f9fa; height: 50px; font-size: 1.3rem; }
         .total-display { background-color: #e7f1ff; color: #0d6efd; border: 1px solid #cce5ff; border-radius: 12px; padding: 20px; margin-top: 20px; }
         
-        /* BOTONES */
         .btn-back { background-color: #e9ecef; color: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: bold; transition: transform 0.2s; }
         .btn-back:active { transform: scale(0.9); }
 
@@ -159,7 +154,6 @@ if ($singleTour) {
         .btn-subtle { background-color: transparent; border: 1px solid #ced4da; color: #6c757d; border-radius: 50px; padding: 10px 20px; font-size: 0.9rem; width: 100%; display: block; text-align: center; text-decoration: none; transition: all 0.3s; margin-top: 20px; }
         .btn-subtle:hover { background-color: #e9ecef; border-color: #adb5bd; color: #495057; }
 
-        /* BUSCADOR */
         .search-container { max-width: 500px; margin: 0 auto 30px auto; position: relative; }
         .search-input { width: 100%; padding: 14px 20px 14px 50px; border-radius: 50px; border: 1px solid #eee; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.05); outline: none; transition: all 0.3s; font-size: 1rem; }
         .search-input:focus { border-color: #0d6efd; box-shadow: 0 8px 20px rgba(13, 110, 253, 0.1); }
@@ -428,10 +422,12 @@ if ($singleTour) {
 
     <script>
         document.getElementById('searchTour').addEventListener('keyup', function() {
-            let filter = this.value.toLowerCase();
+            // Se normaliza el texto de búsqueda para quitar tildes y pasar a minúsculas
+            let filter = this.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             let cards = document.querySelectorAll('.tour-card-col');
             cards.forEach(function(card) {
-                let title = card.querySelector('.tour-title').textContent.toLowerCase();
+                // Se normaliza el título del tour de la misma forma para comparar
+                let title = card.querySelector('.tour-title').textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                 card.style.display = (title.indexOf(filter) > -1) ? '' : 'none';
             });
         });
