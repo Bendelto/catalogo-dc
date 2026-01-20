@@ -159,7 +159,6 @@ if ($singleTour) {
         .search-input:focus { border-color: #0d6efd; box-shadow: 0 8px 20px rgba(13, 110, 253, 0.1); }
         .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #bbb; font-size: 1.1rem; }
         
-        /* FILTROS MEJORADOS PARA MÓVIL */
         .filter-btn-group { 
             display: flex; 
             gap: 8px; 
@@ -478,6 +477,21 @@ if ($singleTour) {
             const grid = document.getElementById('toursGrid');
             const cards = Array.from(grid.getElementsByClassName('tour-card-col'));
 
+            // Lógica de filtrado exclusivo para ofertas
+            if (criteria === 'ofertas') {
+                cards.forEach(card => {
+                    if (card.dataset.oferta === '1') {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            } else {
+                // Para otros criterios, mostramos todos los que no estén filtrados por búsqueda
+                cards.forEach(card => card.style.display = '');
+            }
+
+            // Lógica de ordenamiento
             cards.sort((a, b) => {
                 switch(criteria) {
                     case 'precio_min':
