@@ -83,11 +83,15 @@ if ($singleTour) {
     <meta property="og:description" content="<?= htmlspecialchars($metaDesc) ?>">
     <?php if(isset($metaImage)): ?><meta property="og:image" content="<?= $metaImage ?>"><?php endif; ?>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body { background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #333; padding-bottom: 40px; }
+        body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #333; padding-bottom: 40px; }
         .main-container { max-width: 1200px; margin: 0 auto; }
         .calc-container { max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
         
@@ -107,8 +111,8 @@ if ($singleTour) {
         }
 
         @media (min-width: 992px) {
-            .site-header { padding: 35px 0; }
-            .main-logo { width: 320px; }
+            .site-header { padding: 31.5px 0; } /* Reducido 10% de 35px */
+            .main-logo { width: 288px; }        /* Reducido 10% de 320px */
         }
 
         .card-price { border: 0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; position: relative; }
@@ -130,14 +134,14 @@ if ($singleTour) {
         .accordion-item { border: 0; border-radius: 12px !important; overflow: hidden; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .accordion-button:not(.collapsed) { background-color: #f1f8ff; color: #0d6efd; font-weight: 600; }
 
-        h4 { font-weight: 800; color: #1a1a1a; letter-spacing: -0.5px; }
+        h4, h6 { font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px; }
         .price-cop-highlight { color: #1a1a1a; font-weight: 800; font-size: 1.4rem; display: block; line-height: 1.1; }
         .price-old { text-decoration: line-through; color: #999; font-size: 0.8rem; font-weight: normal; display: block; margin-bottom: 2px; }
         
         .flag-icon { width: 22px !important; height: auto; vertical-align: middle; margin-right: 6px; box-shadow: none; flex-shrink: 0; }
         
         .calc-box { background-color: #fff; border-radius: 12px; padding: 20px; border: 1px solid #edf2f7; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-        .form-control-qty { text-align: center; font-weight: bold; background: #f8f9fa; height: 50px; font-size: 1.3rem; }
+        .form-control-qty { text-align: center; font-weight: bold; background: #f8f9fa; height: 50px; font-size: 1.3rem; font-family: 'Poppins', sans-serif; }
         .total-display { background-color: #e7f1ff; color: #0d6efd; border: 1px solid #cce5ff; border-radius: 12px; padding: 20px; margin-top: 20px; }
         
         .btn-back { background-color: #e9ecef; color: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: bold; transition: transform 0.2s; }
@@ -146,17 +150,17 @@ if ($singleTour) {
         .btn-share-native { background-color: #f8f9fa; color: #0d6efd; width: 40px; height: 40px; border-radius: 50%; border: 1px solid #dee2e6; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s; }
         .btn-share-native:active { transform: scale(0.9); }
 
-        .btn-whatsapp-desktop { background-color: #25D366; color: white; font-weight: bold; border: none; border-radius: 50px; padding: 14px; text-decoration: none; display: block; text-align: center; transition: background 0.3s; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); }
+        .btn-whatsapp-desktop { background-color: #25D366; color: white; font-weight: 700; border: none; border-radius: 50px; padding: 14px; text-decoration: none; display: block; text-align: center; transition: background 0.3s; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); }
         .btn-whatsapp-desktop:hover { background-color: #1ebc57; color: white; }
         
-        .btn-whatsapp-mobile { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 1050; background-color: #25D366; color: white; padding: 14px 30px; border-radius: 50px; box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4); font-weight: 800; font-size: 1rem; text-decoration: none; display: flex; align-items: center; gap: 10px; white-space: nowrap; transition: transform 0.2s; }
+        .btn-whatsapp-mobile { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 1050; background-color: #25D366; color: white; padding: 14px 30px; border-radius: 50px; box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4); font-weight: 700; font-size: 1rem; text-decoration: none; display: flex; align-items: center; gap: 10px; white-space: nowrap; transition: transform 0.2s; }
         .btn-whatsapp-mobile:active { transform: translateX(-50%) scale(0.95); }
 
         .btn-subtle { background-color: transparent; border: 1px solid #ced4da; color: #6c757d; border-radius: 50px; padding: 10px 20px; font-size: 0.9rem; width: 100%; display: block; text-align: center; text-decoration: none; transition: all 0.3s; margin-top: 20px; }
         .btn-subtle:hover { background-color: #e9ecef; border-color: #adb5bd; color: #495057; }
 
         .search-container { max-width: 500px; margin: 0 auto 15px auto; position: relative; }
-        .search-input { width: 100%; padding: 14px 20px 14px 50px; border-radius: 50px; border: 1px solid #eee; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.05); outline: none; transition: all 0.3s; font-size: 1rem; }
+        .search-input { width: 100%; padding: 14px 20px 14px 50px; border-radius: 50px; border: 1px solid #eee; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.05); outline: none; transition: all 0.3s; font-size: 1rem; font-family: 'Poppins', sans-serif; }
         .search-input:focus { border-color: #0d6efd; box-shadow: 0 8px 20px rgba(13, 110, 253, 0.1); }
         .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #bbb; font-size: 1.1rem; }
         
@@ -184,6 +188,7 @@ if ($singleTour) {
             white-space: nowrap; 
             transition: all 0.2s; 
             flex-shrink: 0;
+            font-family: 'Poppins', sans-serif;
         }
         .btn-filter.active { background: #0d6efd; border-color: #0d6efd; color: white; }
 
