@@ -100,6 +100,7 @@ if ($singleTour) {
             z-index: 1000;
             text-align: center;
             margin-bottom: 30px;
+            transition: padding 0.3s ease;
         }
         .main-logo {
             width: 180px;
@@ -107,6 +108,18 @@ if ($singleTour) {
             height: auto;
             display: block;
             margin: 0 auto;
+            transition: width 0.3s ease;
+        }
+
+        /* LOGO MÁS GRANDE EN ESCRITORIO */
+        @media (min-width: 992px) {
+            .site-header { padding: 25px 0; }
+            .main-logo { width: 280px; }
+            
+            /* Ajuste cuando hay scroll (detectado por JS si se desea exactitud, 
+               o simplemente manteniendo el sticky actual) */
+            .site-header.scrolled { padding: 10px 0; }
+            .site-header.scrolled .main-logo { width: 180px; }
         }
 
         .card-price { border: 0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; position: relative; }
@@ -191,7 +204,7 @@ if ($singleTour) {
 </head>
 <body>
 
-<div class="site-header">
+<div class="site-header" id="mainHeader">
     <div class="container">
         <a href="./">
             <img src="logo.svg" alt="Descubre Cartagena" class="main-logo">
@@ -370,6 +383,16 @@ if ($singleTour) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // MANEJO DEL HEADER AL HACER SCROLL
+        window.addEventListener('scroll', function() {
+            const header = document.getElementById('mainHeader');
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
         const priceAdult = <?= $precioFinalCalc ?>;
         const priceKid = <?= $singleTour['precio_nino'] ?: 0 ?>;
         const rateUsd = <?= $tasa_tuya_usd ?>; const rateBrl = <?= $tasa_tuya_brl ?>;
@@ -476,6 +499,16 @@ if ($singleTour) {
     </div>
 
     <script>
+        // MANEJO DEL HEADER AL HACER SCROLL (EN LA LISTA TAMBIÉN)
+        window.addEventListener('scroll', function() {
+            const header = document.getElementById('mainHeader');
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
         document.getElementById('searchTour').addEventListener('keyup', function() {
             let filter = this.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             let cards = document.querySelectorAll('.tour-card-col');
