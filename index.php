@@ -111,8 +111,8 @@ if ($singleTour) {
         }
 
         @media (min-width: 992px) {
-            .site-header { padding: 31.5px 0; } /* Reducido 10% de 35px */
-            .main-logo { width: 288px; }        /* Reducido 10% de 320px */
+            .site-header { padding: 31.5px 0; }
+            .main-logo { width: 288px; }
         }
 
         .card-price { border: 0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; position: relative; }
@@ -134,9 +134,12 @@ if ($singleTour) {
         .accordion-item { border: 0; border-radius: 12px !important; overflow: hidden; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .accordion-button:not(.collapsed) { background-color: #f1f8ff; color: #0d6efd; font-weight: 600; }
 
-        h4, h6 { font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px; }
-        .price-cop-highlight { color: #1a1a1a; font-weight: 800; font-size: 1.4rem; display: block; line-height: 1.1; }
-        .price-old { text-decoration: line-through; color: #999; font-size: 0.8rem; font-weight: normal; display: block; margin-bottom: 2px; }
+        /* AJUSTE DE GROSOR EN TÍTULOS */
+        h4, h6, .tour-title { font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px; }
+        
+        /* AJUSTE DE TAMAÑO Y GROSOR EN PRECIOS */
+        .price-cop-highlight { color: #1a1a1a; font-weight: 700; font-size: 1.25rem; display: block; line-height: 1.1; }
+        .price-old { text-decoration: line-through; color: #999; font-size: 0.8rem; font-weight: 400; display: block; margin-bottom: 2px; }
         
         .flag-icon { width: 22px !important; height: auto; vertical-align: middle; margin-right: 6px; box-shadow: none; flex-shrink: 0; }
         
@@ -215,7 +218,7 @@ if ($singleTour) {
         <div class="d-flex align-items-center justify-content-between mb-4">
             <div class="d-flex align-items-center gap-3" style="flex: 1;">
                 <a href="./" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
-                <h4 class="mb-0 lh-sm" style="font-size: 1.3rem;"><?= htmlspecialchars($singleTour['nombre']) ?></h4>
+                <h4 class="mb-0 lh-sm" style="font-size: 1.15rem;"><?= htmlspecialchars($singleTour['nombre']) ?></h4>
             </div>
             <button class="btn-share-native ms-2" onclick="shareNative()" title="Compartir">
                 <i class="fa-solid fa-share-nodes"></i>
@@ -239,30 +242,30 @@ if ($singleTour) {
         <div class="card card-price p-3 mb-4">
             <div class="row g-0 text-center">
                 <div class="col-6 border-end pe-2 d-flex flex-column justify-content-center">
-                    <span class="text-uppercase text-muted fw-bold" style="font-size:0.7rem;">Adulto <small class="fw-normal">(<?= $singleTour['rango_adulto'] ?? '' ?>)</small></span>
-                    <div class="my-1" style="min-height: 50px; display: flex; flex-direction: column; justify-content: center;">
+                    <span class="text-uppercase text-muted fw-bold" style="font-size:0.65rem;">Adulto <small class="fw-normal">(<?= $singleTour['rango_adulto'] ?? '' ?>)</small></span>
+                    <div class="my-1" style="min-height: 45px; display: flex; flex-direction: column; justify-content: center;">
                         <?php if($usarPromo): ?>
                             <span class="price-old">$<?= number_format($precioBase) ?></span>
                         <?php endif; ?>
                         <span class="price-cop-highlight">$<?= number_format($precioFinalCalc) ?></span>
                     </div>
                     <div class="d-flex flex-column gap-1 mt-1">
-                        <span class="price-usd small"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($precioFinalCalc / $tasa_tuya_usd) ?></span>
-                        <span class="price-brl small"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$<?= precio_inteligente($precioFinalCalc / $tasa_tuya_brl) ?></span>
+                        <span class="price-usd small" style="font-size: 0.75rem;"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($precioFinalCalc / $tasa_tuya_usd) ?></span>
+                        <span class="price-brl small" style="font-size: 0.75rem;"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$<?= precio_inteligente($precioFinalCalc / $tasa_tuya_brl) ?></span>
                     </div>
                 </div>
                 <div class="col-6 ps-2 d-flex flex-column justify-content-center">
-                    <span class="text-uppercase text-muted fw-bold" style="font-size:0.7rem;">Niño <small class="fw-normal">(<?= $singleTour['rango_nino'] ?? '' ?>)</small></span>
+                    <span class="text-uppercase text-muted fw-bold" style="font-size:0.65rem;">Niño <small class="fw-normal">(<?= $singleTour['rango_nino'] ?? '' ?>)</small></span>
                     <?php if(!empty($singleTour['precio_nino'])): ?>
-                        <div class="my-1" style="min-height: 50px; display: flex; flex-direction: column; justify-content: center;">
+                        <div class="my-1" style="min-height: 45px; display: flex; flex-direction: column; justify-content: center;">
                             <span class="price-cop-highlight">$<?= number_format($singleTour['precio_nino']) ?></span>
                         </div>
                         <div class="d-flex flex-column gap-1 mt-1">
-                            <span class="price-usd small"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($singleTour['precio_nino'] / $tasa_tuya_usd) ?></span>
-                            <span class="price-brl small"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$<?= precio_inteligente($singleTour['precio_nino'] / $tasa_tuya_brl) ?></span>
+                            <span class="price-usd small" style="font-size: 0.75rem;"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($singleTour['precio_nino'] / $tasa_tuya_usd) ?></span>
+                            <span class="price-brl small" style="font-size: 0.75rem;"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$<?= precio_inteligente($singleTour['precio_nino'] / $tasa_tuya_brl) ?></span>
                         </div>
                     <?php else: ?>
-                        <div class="text-muted mt-3 small" style="min-height: 50px; display: flex; align-items: center; justify-content: center;">- No aplica -</div>
+                        <div class="text-muted mt-3 small" style="min-height: 45px; display: flex; align-items: center; justify-content: center;">- No aplica -</div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -277,7 +280,7 @@ if ($singleTour) {
 
         <div class="info-box">
             <?php if(!empty($desc)): ?>
-                <div class="text-secondary mb-4" style="white-space: pre-line; line-height: 1.6;">
+                <div class="text-secondary mb-4" style="white-space: pre-line; line-height: 1.6; font-size: 0.9rem;">
                     <?= htmlspecialchars($desc) ?>
                 </div>
                 <hr class="opacity-10 my-4">
@@ -285,18 +288,18 @@ if ($singleTour) {
 
             <div class="row g-4">
                 <div class="col-12 col-md-6 border-bottom border-md-0 pb-3 pb-md-0">
-                    <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-check text-success"></i> Incluye</h6>
+                    <h6 class="text-dark mb-3 small"><i class="fa-solid fa-circle-check text-success"></i> Incluye</h6>
                     <ul class="list-check ps-0 m-0 text-secondary">
                         <?php foreach(explode("\n", $inc) as $item): if(trim($item)=='')continue; ?>
-                            <li><i class="fa-solid fa-check text-success"></i> <?= htmlspecialchars($item) ?></li>
+                            <li style="font-size: 0.85rem;"><i class="fa-solid fa-check text-success"></i> <?= htmlspecialchars($item) ?></li>
                         <?php endforeach; ?>
                     </ul>
                 </div>
                 <div class="col-12 col-md-6">
-                    <h6 class="text-dark mb-3"><i class="fa-solid fa-circle-xmark text-danger"></i> No incluye</h6>
+                    <h6 class="text-dark mb-3 small"><i class="fa-solid fa-circle-xmark text-danger"></i> No incluye</h6>
                     <ul class="list-check ps-0 m-0 text-secondary">
                         <?php foreach(explode("\n", $no_inc) as $item): if(trim($item)=='')continue; ?>
-                            <li><i class="fa-solid fa-xmark text-danger"></i> <?= htmlspecialchars($item) ?></li>
+                            <li style="font-size: 0.85rem;"><i class="fa-solid fa-xmark text-danger"></i> <?= htmlspecialchars($item) ?></li>
                         <?php endforeach; ?>
                     </ul>
                 </div>
@@ -308,12 +311,12 @@ if ($singleTour) {
             <?php if(!empty($horario)): ?>
             <div class="accordion-item">
                 <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHorario">
+                    <button class="accordion-button collapsed py-2 small" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHorario">
                         <i class="fa-regular fa-clock me-2"></i> Horarios
                     </button>
                 </h2>
                 <div id="collapseHorario" class="accordion-collapse collapse" data-bs-parent="#accordionExtras">
-                    <div class="accordion-body text-secondary">
+                    <div class="accordion-body text-secondary" style="font-size: 0.85rem;">
                         <ul class="list-unstyled m-0">
                             <?php foreach(explode("\n", $horario) as $line): if(trim($line)=='')continue; ?>
                                 <li class="mb-2 d-flex align-items-start"><i class="fa-regular fa-clock text-primary mt-1 me-2"></i><span><?= htmlspecialchars($line) ?></span></li>
@@ -327,12 +330,12 @@ if ($singleTour) {
             <?php if(!empty($punto)): ?>
             <div class="accordion-item">
                 <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePunto">
+                    <button class="accordion-button collapsed py-2 small" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePunto">
                         <i class="fa-solid fa-map-location-dot me-2"></i> Punto de Encuentro
                     </button>
                 </h2>
                 <div id="collapsePunto" class="accordion-collapse collapse" data-bs-parent="#accordionExtras">
-                    <div class="accordion-body text-secondary">
+                    <div class="accordion-body text-secondary" style="font-size: 0.85rem;">
                         <ul class="list-unstyled m-0">
                             <?php foreach(explode("\n", $punto) as $line): if(trim($line)=='')continue; ?>
                                 <li class="mb-2 d-flex align-items-start"><i class="fa-solid fa-map-pin text-danger mt-1 me-2"></i><span><?= htmlspecialchars($line) ?></span></li>
@@ -346,17 +349,17 @@ if ($singleTour) {
         <?php endif; ?>
 
         <div class="calc-box mb-4">
-            <h6 class="fw-bold mb-4 text-center text-secondary"><i class="fa-solid fa-calculator me-2"></i>Calcular Total</h6>
+            <h6 class="fw-bold mb-4 text-center text-secondary small"><i class="fa-solid fa-calculator me-2"></i>Calcular Total</h6>
             <div class="row g-3 justify-content-center">
-                <div class="col-5"><label class="small text-muted mb-2 d-block text-center fw-bold">ADULTOS</label><input type="number" id="qtyAdult" class="form-control form-control-qty shadow-sm" value="1" min="1"></div>
-                <div class="col-5"><label class="small text-muted mb-2 d-block text-center fw-bold">NIÑOS</label><input type="number" id="qtyKid" class="form-control form-control-qty shadow-sm" value="0" min="0" <?= empty($singleTour['precio_nino']) ? 'disabled' : '' ?>></div>
+                <div class="col-5"><label class="small text-muted mb-2 d-block text-center fw-bold" style="font-size: 0.65rem;">ADULTOS</label><input type="number" id="qtyAdult" class="form-control form-control-qty shadow-sm" value="1" min="1"></div>
+                <div class="col-5"><label class="small text-muted mb-2 d-block text-center fw-bold" style="font-size: 0.65rem;">NIÑOS</label><input type="number" id="qtyKid" class="form-control form-control-qty shadow-sm" value="0" min="0" <?= empty($singleTour['precio_nino']) ? 'disabled' : '' ?>></div>
             </div>
             <div class="total-display text-center">
-                <div class="small text-uppercase text-secondary mb-1 fw-bold">Total a Pagar</div>
-                <div class="fw-bold text-dark fs-1 lh-1 mb-3" id="totalCOP">$<?= number_format($precioFinalCalc) ?></div>
+                <div class="small text-uppercase text-secondary mb-1 fw-bold" style="font-size: 0.7rem;">Total a Pagar</div>
+                <div class="fw-bold text-dark fs-2 lh-1 mb-3" id="totalCOP">$<?= number_format($precioFinalCalc) ?></div>
                 <div class="row pt-3 border-top border-primary-subtle">
-                    <div class="col-6 border-end border-primary-subtle"><div class="currency-tag text-success mb-1"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> Dollars</div><div class="fw-bold text-success fs-4" id="totalUSD">$0</div></div>
-                    <div class="col-6"><div class="currency-tag text-primary mb-1"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> Reais</div><div class="fw-bold text-primary fs-4" id="totalBRL">R$ 0</div></div>
+                    <div class="col-6 border-end border-primary-subtle"><div class="currency-tag text-success mb-1" style="font-size: 0.75rem;"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> Dollars</div><div class="fw-bold text-success fs-5" id="totalUSD">$0</div></div>
+                    <div class="col-6"><div class="currency-tag text-primary mb-1" style="font-size: 0.75rem;"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> Reais</div><div class="fw-bold text-primary fs-5" id="totalBRL">R$ 0</div></div>
                 </div>
             </div>
             
@@ -419,7 +422,7 @@ if ($singleTour) {
 <?php else: ?>
     <div class="search-container">
         <i class="fa-solid fa-magnifying-glass search-icon"></i>
-        <input type="text" id="searchTour" class="search-input" placeholder="¿Qué te gustaría hacer? (Ej: Isla, Noche, Bote)">
+        <input type="text" id="searchTour" class="search-input" placeholder="¿Qué te gustaría hacer?">
     </div>
 
     <div class="filter-btn-group">
@@ -452,25 +455,25 @@ if ($singleTour) {
                 <?php endif; ?>
 
                 <div class="p-4">
-                    <h6 class="fw-bold mb-3 text-dark lh-base tour-title"><?= htmlspecialchars($tour['nombre']) ?></h6>
-                    <div class="mb-3" style="min-height: 55px; display: flex; flex-direction: column; justify-content: center;">
+                    <h6 class="fw-bold mb-3 text-dark lh-base tour-title" style="font-size: 1.1rem;"><?= htmlspecialchars($tour['nombre']) ?></h6>
+                    <div class="mb-3" style="min-height: 50px; display: flex; flex-direction: column; justify-content: center;">
                         <?php if($esOferta): ?>
-                            <span class="price-old">$<?= number_format($pBase) ?></span>
+                            <span class="price-old" style="font-size: 0.75rem;">$<?= number_format($pBase) ?></span>
                         <?php endif; ?>
-                        <span class="price-cop-highlight">
-                            $<?= number_format($pFinal) ?> <small class="fs-6 text-muted fw-normal">COP</small>
+                        <span class="price-cop-highlight" style="font-size: 1.2rem;">
+                            $<?= number_format($pFinal) ?> <small class="text-muted fw-normal" style="font-size: 0.75rem;">COP</small>
                         </span>
-                        <?php if(!empty($tour['rango_adulto'])): ?><div style="font-size:0.7rem;color:#999;font-weight:normal">(Adultos <?= $tour['rango_adulto'] ?>)</div><?php endif; ?>
+                        <?php if(!empty($tour['rango_adulto'])): ?><div style="font-size:0.65rem;color:#999;font-weight:normal">(Adultos <?= $tour['rango_adulto'] ?>)</div><?php endif; ?>
                     </div>
                     <div class="d-flex justify-content-between align-items-end mt-auto pt-3 border-top">
                         <div class="d-flex flex-column gap-1">
-                            <div class="price-usd"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($pFinal / $tasa_tuya_usd) ?></div>
-                            <div class="price-brl"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$ <?= precio_inteligente($pFinal / $tasa_tuya_brl) ?></div>
+                            <div class="price-usd" style="font-size: 0.8rem;"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"> USD $<?= precio_inteligente($pFinal / $tasa_tuya_usd) ?></div>
+                            <div class="price-brl" style="font-size: 0.8rem;"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"> BRL R$ <?= precio_inteligente($pFinal / $tasa_tuya_brl) ?></div>
                         </div>
                         <div class="text-primary fs-5"><i class="fa-solid fa-circle-arrow-right"></i></div>
                     </div>
-                    <div class="mt-2 pt-2 border-top-0">
-                        <div class="conversion-info">
+                    <div class="mt-2 pt-2">
+                        <div class="conversion-info" style="font-size: 0.65rem;">
                             <span>Tasas:</span>
                             <span>USD: <strong>$<?= number_format($tasa_tuya_usd, 0) ?></strong></span>
                             <span>BRL: <strong>$<?= number_format($tasa_tuya_brl, 0) ?></strong></span>
