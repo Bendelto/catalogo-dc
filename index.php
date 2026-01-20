@@ -154,10 +154,15 @@ if ($singleTour) {
         .btn-subtle { background-color: transparent; border: 1px solid #ced4da; color: #6c757d; border-radius: 50px; padding: 10px 20px; font-size: 0.9rem; width: 100%; display: block; text-align: center; text-decoration: none; transition: all 0.3s; margin-top: 20px; }
         .btn-subtle:hover { background-color: #e9ecef; border-color: #adb5bd; color: #495057; }
 
-        .search-container { max-width: 500px; margin: 0 auto 30px auto; position: relative; }
+        .search-container { max-width: 500px; margin: 0 auto 15px auto; position: relative; }
         .search-input { width: 100%; padding: 14px 20px 14px 50px; border-radius: 50px; border: 1px solid #eee; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.05); outline: none; transition: all 0.3s; font-size: 1rem; }
         .search-input:focus { border-color: #0d6efd; box-shadow: 0 8px 20px rgba(13, 110, 253, 0.1); }
         .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #bbb; font-size: 1.1rem; }
+        
+        .filter-btn-group { display: flex; gap: 8px; overflow-x: auto; padding: 5px 0 15px 0; scrollbar-width: none; -ms-overflow-style: none; justify-content: center; }
+        .filter-btn-group::-webkit-scrollbar { display: none; }
+        .btn-filter { background: white; border: 1px solid #dee2e6; color: #666; padding: 6px 15px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; white-space: nowrap; transition: all 0.2s; }
+        .btn-filter.active { background: #0d6efd; border-color: #0d6efd; color: white; }
     </style>
 </head>
 <body>
@@ -377,6 +382,13 @@ if ($singleTour) {
         <input type="text" id="searchTour" class="search-input" placeholder="¿Qué te gustaría hacer? (Ej: Isla, Noche, Bote)">
     </div>
 
+    <div class="filter-btn-group px-2">
+        <button class="btn-filter active" onclick="sortTours('nombre')">Nombre (A-Z)</button>
+        <button class="btn-filter" onclick="sortTours('precio_min')">Precio (Menor a mayor)</button>
+        <button class="btn-filter" onclick="sortTours('ofertas')">Ofertas</button>
+        <button class="btn-filter" onclick="sortTours('ninos')">Planes con niño</button>
+    </div>
+
     <div class="d-flex justify-content-center gap-3 mb-4 flex-wrap">
         <span class="badge-tasa"><img src="https://flagcdn.com/w40/us.png" class="flag-icon"><span class="fw-bold text-success">USD</span> $<?= number_format($tasa_tuya_usd, 0) ?></span>
         <span class="badge-tasa"><img src="https://flagcdn.com/w40/br.png" class="flag-icon"><span class="fw-bold text-primary">BRL</span> $<?= number_format($tasa_tuya_brl, 0) ?></span>
@@ -388,20 +400,26 @@ if ($singleTour) {
             
             $pBase = $tour['precio_cop'];
             $pPromo = $tour['precio_promo'] ?? 0;
-            $pFinal = ($pPromo > 0 && $pPromo < $pBase) ? $pPromo : $pBase;
+            $esOferta = ($pPromo > 0 && $pPromo < $pBase);
+            $pFinal = $esOferta ? $pPromo : $pBase;
+            $tienePrecioNino = (!empty($tour['precio_nino']) && $tour['precio_nino'] > 0);
         ?>
-        <div class="col-12 col-md-6 col-lg-4 tour-card-col">
+        <div class="col-12 col-md-6 col-lg-4 tour-card-col" 
+             data-nombre="<?= htmlspecialchars($tour['nombre']) ?>" 
+             data-precio="<?= $pFinal ?>"
+             data-oferta="<?= $esOferta ? '1' : '0' ?>"
+             data-nino="<?= $tienePrecioNino ? '1' : '0' ?>">
             <a href="./<?= $slug ?>" class="card card-price">
                 <?php if(!empty($tour['imagen'])): ?><img src="<?= $tour['imagen'] ?>" class="tour-img-list"><?php endif; ?>
                 
-                <?php if($pFinal < $pBase): ?>
+                <?php if($esOferta): ?>
                     <span class="badge-oferta">OFERTA</span>
                 <?php endif; ?>
 
                 <div class="p-4">
                     <h6 class="fw-bold mb-3 text-dark lh-base tour-title"><?= htmlspecialchars($tour['nombre']) ?></h6>
                     <div class="price-cop-highlight mb-3">
-                        <?php if($pFinal < $pBase): ?>
+                        <?php if($esOferta): ?>
                             <span class="price-old">$<?= number_format($pBase) ?></span>
                         <?php endif; ?>
                         $<?= number_format($pFinal) ?> <small class="fs-6 text-muted fw-normal">COP</small>
@@ -422,15 +440,37 @@ if ($singleTour) {
 
     <script>
         document.getElementById('searchTour').addEventListener('keyup', function() {
-            // Se normaliza el texto de búsqueda para quitar tildes y pasar a minúsculas
             let filter = this.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             let cards = document.querySelectorAll('.tour-card-col');
             cards.forEach(function(card) {
-                // Se normaliza el título del tour de la misma forma para comparar
                 let title = card.querySelector('.tour-title').textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                 card.style.display = (title.indexOf(filter) > -1) ? '' : 'none';
             });
         });
+
+        function sortTours(criteria) {
+            document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const grid = document.getElementById('toursGrid');
+            const cards = Array.from(grid.getElementsByClassName('tour-card-col'));
+
+            cards.sort((a, b) => {
+                switch(criteria) {
+                    case 'precio_min':
+                        return parseFloat(a.dataset.precio) - parseFloat(b.dataset.precio);
+                    case 'ofertas':
+                        return b.dataset.oferta - a.dataset.oferta || a.dataset.nombre.localeCompare(b.dataset.nombre);
+                    case 'ninos':
+                        return b.dataset.nino - a.dataset.nino || a.dataset.nombre.localeCompare(b.dataset.nombre);
+                    case 'nombre':
+                    default:
+                        return a.dataset.nombre.localeCompare(b.dataset.nombre);
+                }
+            });
+
+            cards.forEach(card => grid.appendChild(card));
+        }
     </script>
 <?php endif; ?>
 
