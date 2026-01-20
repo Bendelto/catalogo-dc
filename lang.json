@@ -9,15 +9,13 @@
     "nino": "Niño",
     "incluye": "Incluye",
     "no_incluye": "No incluye",
+    "tasas_hoy": "Tasas hoy",
     "search_placeholder": "¿Qué te gustaría hacer?",
     "total_pagar": "Total a Pagar",
     "calcular_total": "Calcular Total",
     "ver_tours": "Ver todos los tours",
     "horarios": "Horarios",
-    "punto_encuentro": "Punto de Encuentro",
-    "tasas_hoy": "Tasas hoy",
-    "compartir": "Compartir",
-    "desliza": "Desliza o toca para ampliar"
+    "punto_encuentro": "Punto de Encuentro"
   },
   "en": {
     "filter_all": "Name (A-Z)",
@@ -29,15 +27,13 @@
     "nino": "Child",
     "incluye": "Includes",
     "no_incluye": "Not included",
+    "tasas_hoy": "Exchange rates",
     "search_placeholder": "What would you like to do?",
     "total_pagar": "Total to Pay",
     "calcular_total": "Calculate Total",
     "ver_tours": "View all tours",
     "horarios": "Schedules",
-    "punto_encuentro": "Meeting Point",
-    "tasas_hoy": "Exchange rates",
-    "compartir": "Share",
-    "desliza": "Swipe or tap to enlarge"
+    "punto_encuentro": "Meeting Point"
   },
   "pt": {
     "filter_all": "Nome (A-Z)",
@@ -49,14 +45,12 @@
     "nino": "Criança",
     "incluye": "Inclui",
     "no_incluye": "Não inclui",
+    "tasas_hoy": "Taxas hoje",
     "search_placeholder": "O que você gostaria de fazer?",
     "total_pagar": "Total a Pagar",
     "calcular_total": "Calcular Total",
     "ver_tours": "Ver todos os passeios",
     "horarios": "Horários",
-    "punto_encuentro": "Ponto de Encontro",
-    "tasas_hoy": "Taxas hoje",
-    "compartir": "Compartilhar",
-    "desliza": "Deslize ou toque para ampliar"
+    "punto_encuentro": "Ponto de Encontro"
   }
 }
