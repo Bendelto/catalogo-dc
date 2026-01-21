@@ -196,7 +196,9 @@ if ($singleTour) {
         .conversion-info { font-size: 0.75rem; color: #777; display: flex; align-items: center; gap: 8px; }
         .conversion-info strong { color: #444; }
     </style>
-    <script async src="https://static.linguise.com/script-js/switcher.bundle.js?d=pk_gJW71rQjlMrHLZUpmLNObycZYW4VBhfB"></script>
+    <div class="gtranslate_wrapper"></div>
+<script>window.gtranslateSettings = {"default_language":"es","native_language_names":true,"url_structure":"sub_domain","languages":["es","en","pt"],"wrapper_selector":".gtranslate_wrapper","switcher_horizontal_position":"right","switcher_vertical_position":"top","float_switcher_open_direction":"bottom","alt_flags":{"en":"usa","pt":"brazil","es":"colombia"}}</script>
+<script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
 </head>
 <body>
 
