@@ -197,7 +197,7 @@ if ($singleTour) {
         .conversion-info strong { color: #444; }
     </style>
     <div class="gtranslate_wrapper"></div>
-<script>window.gtranslateSettings = {"default_language":"es","native_language_names":true,"detect_browser_language":true,"url_structure":"sub_directory","languages":["es","en","pt","it","fr","de"],"wrapper_selector":".gtranslate_wrapper","switcher_horizontal_position":"right","switcher_vertical_position":"top","float_switcher_open_direction":"bottom","alt_flags":{"en":"usa","pt":"brazil","es":"colombia"}}</script>
+<script>window.gtranslateSettings = {"default_language":"es","native_language_names":true,"detect_browser_language":true,"url_structure":"sub_domain","languages":["es","en","pt","it","fr","de"],"wrapper_selector":".gtranslate_wrapper","switcher_horizontal_position":"right","switcher_vertical_position":"top","float_switcher_open_direction":"bottom","alt_flags":{"en":"usa","pt":"brazil","es":"colombia"}}</script>
 <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
 </head>
 <body>
