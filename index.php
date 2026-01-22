@@ -40,7 +40,6 @@ if ($singleTour) {
     $desc = $singleTour['descripcion'] ?? $singleTour['description'] ?? '';
     $inc = $singleTour['incluye'] ?? $singleTour['include'] ?? '';
     $no_inc = $singleTour['no_incluye'] ?? $singleTour['not_include'] ?? '';
-    // NUEVO: Campo Información Adicional
     $info_adicional = $singleTour['info_adicional'] ?? '';
 
     // PRECIOS
@@ -93,8 +92,21 @@ if ($singleTour) {
     <style>
         body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; color: #333; padding-bottom: 40px; }
         .main-container { max-width: 1200px; margin: 0 auto; }
-        .calc-container { max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
         
+        /* --- CONTENEDOR VISTA TOUR --- */
+        .calc-container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding-bottom: 80px; 
+        }
+        /* Aumento del 20% solo en escritorio (600px + 120px = 720px) */
+        @media (min-width: 992px) {
+            .calc-container {
+                max-width: 720px;
+            }
+        }
+        /* ---------------------------- */
+
         /* --- HEADER --- */
         .site-header {
             background-color: #ffffff;
