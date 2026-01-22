@@ -100,7 +100,7 @@ if ($singleTour) {
             background-color: #ffffff;
             box-shadow: 0 4px 20px rgba(0,0,0,0.04);
             padding: 15px 0;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         .main-logo {
             width: 180px;
@@ -112,13 +112,11 @@ if ($singleTour) {
         @media (min-width: 992px) {
             .site-header { 
                 padding: 20px 0; 
-                /* Se eliminó el text-align center para permitir distribución */
             }
             .main-logo { 
                 width: 250px; 
                 max-width: 100%;
                 display: block;
-                /* Se eliminó el margin auto para permitir alineación izquierda */
             }
         }
         /* --- FIN HEADER --- */
@@ -169,7 +167,6 @@ if ($singleTour) {
         .btn-subtle:hover { background-color: #e9ecef; border-color: #adb5bd; color: #495057; }
 
         .search-container { max-width: 500px; margin: 0 auto 15px auto; position: relative; width: 100%; }
-        /* Ajuste para que el buscador en header no tenga margen en desktop */
         @media (min-width: 992px) {
             .search-container.in-header {
                 margin: 0;
@@ -181,33 +178,51 @@ if ($singleTour) {
         .search-input:focus { border-color: #0d6efd; box-shadow: 0 8px 20px rgba(13, 110, 253, 0.1); }
         .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #bbb; font-size: 1.1rem; }
         
-        .filter-btn-group { 
-            display: flex; 
-            gap: 8px; 
-            overflow-x: auto; 
-            padding: 5px 15px 15px 15px; 
-            scrollbar-width: none; 
-            -ms-overflow-style: none; 
-            justify-content: flex-start;
+        /* ESTILOS NUEVA BARRA DE FILTROS */
+        .controls-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 15px 20px;
+            border: 1px solid #eee;
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
         }
         @media (min-width: 768px) {
-            .filter-btn-group { justify-content: center; }
+            .controls-bar {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+            }
         }
-        .filter-btn-group::-webkit-scrollbar { display: none; }
-        .btn-filter { 
-            background: white; 
-            border: 1px solid #dee2e6; 
-            color: #666; 
-            padding: 8px 16px; 
-            border-radius: 50px; 
-            font-size: 0.8rem; 
-            font-weight: 600; 
-            white-space: nowrap; 
-            transition: all 0.2s; 
-            flex-shrink: 0;
+        .sort-select {
+            border: 1px solid #dee2e6;
+            border-radius: 50px;
+            padding: 8px 30px 8px 15px;
+            font-size: 0.9rem;
+            color: #495057;
             font-family: 'Poppins', sans-serif;
+            background-color: #fff;
+            cursor: pointer;
+            min-width: 200px;
         }
-        .btn-filter.active { background: #0d6efd; border-color: #0d6efd; color: white; }
+        .filter-switches {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .form-check-input:checked {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        .form-check-label {
+            font-size: 0.9rem;
+            cursor: pointer;
+            user-select: none;
+            color: #555;
+        }
 
         .conversion-info { font-size: 0.75rem; color: #777; display: flex; align-items: center; gap: 8px; }
         .conversion-info strong { color: #444; }
@@ -229,7 +244,7 @@ if ($singleTour) {
         <?php if (!$singleTour): ?>
             <div class="search-container in-header">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" id="searchTour" class="search-input" placeholder="¿Qué te gustaría hacer?">
+                <input type="text" id="searchInput" class="search-input" placeholder="¿Qué te gustaría hacer?">
             </div>
         <?php endif; ?>
     </div>
@@ -447,11 +462,26 @@ if ($singleTour) {
 
 <?php else: ?>
     
-    <div class="filter-btn-group">
-        <button class="btn-filter active" onclick="sortTours('nombre', this)">Nombre (A-Z)</button>
-        <button class="btn-filter" onclick="sortTours('precio_min', this)">Precio (Menor a mayor)</button>
-        <button class="btn-filter" onclick="sortTours('ofertas', this)">Ofertas</button>
-        <button class="btn-filter" onclick="sortTours('ninos', this)">Planes con niño</button>
+    <div class="controls-bar">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-sort text-secondary"></i>
+            <select class="form-select border-0 bg-transparent shadow-none p-0 ps-1 fw-bold text-secondary" id="sortSelect" onchange="applyFilters()">
+                <option value="nombre_asc">Nombre (A-Z)</option>
+                <option value="precio_asc">Precio (Menor a Mayor)</option>
+                <option value="precio_desc">Precio (Mayor a Menor)</option>
+            </select>
+        </div>
+
+        <div class="filter-switches mt-2 mt-md-0">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="filterOfertas" onchange="applyFilters()">
+                <label class="form-check-label" for="filterOfertas">Solo Ofertas</label>
+            </div>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="filterNinos" onchange="applyFilters()">
+                <label class="form-check-label" for="filterNinos">Planes con Niños</label>
+            </div>
+        </div>
     </div>
     
     <div class="row g-4" id="toursGrid">
@@ -501,48 +531,59 @@ if ($singleTour) {
     </div>
 
     <script>
-        document.getElementById('searchTour').addEventListener('keyup', function() {
-            let filter = this.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            let cards = document.querySelectorAll('.tour-card-col');
-            cards.forEach(function(card) {
-                let title = card.querySelector('.tour-title').textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                card.style.display = (title.indexOf(filter) > -1) ? '' : 'none';
-            });
-        });
+        // Referencias elementos
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+        const filterOfertas = document.getElementById('filterOfertas');
+        const filterNinos = document.getElementById('filterNinos');
+        const grid = document.getElementById('toursGrid');
 
-        function sortTours(criteria, btn) {
-            document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+        // Escuchar el buscador
+        if(searchInput) {
+            searchInput.addEventListener('keyup', applyFilters);
+        }
 
-            const grid = document.getElementById('toursGrid');
+        // Función Maestra: Combina Buscador + Filtros + Orden
+        function applyFilters() {
             const cards = Array.from(grid.getElementsByClassName('tour-card-col'));
+            
+            // 1. Obtener valores
+            const searchText = searchInput ? searchInput.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+            const onlyOffers = filterOfertas.checked;
+            const onlyKids = filterNinos.checked;
+            const sortValue = sortSelect.value;
 
-            if (criteria === 'ofertas') {
-                cards.forEach(card => {
-                    if (card.dataset.oferta === '1') {
-                        card.style.display = '';
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-            } else {
-                cards.forEach(card => card.style.display = '');
-            }
+            // 2. Filtrar (Mostrar/Ocultar)
+            cards.forEach(card => {
+                let show = true;
+                
+                // Texto Buscador
+                const title = card.querySelector('.tour-title').textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                if (searchText !== "" && title.indexOf(searchText) === -1) show = false;
 
+                // Checkbox Ofertas
+                if (onlyOffers && card.dataset.oferta !== '1') show = false;
+
+                // Checkbox Niños
+                if (onlyKids && card.dataset.nino !== '1') show = false;
+
+                card.style.display = show ? '' : 'none';
+            });
+
+            // 3. Ordenar (Solo los visibles se reordenan visualmente, pero ordenamos todo el array en el DOM)
             cards.sort((a, b) => {
-                switch(criteria) {
-                    case 'precio_min':
+                switch(sortValue) {
+                    case 'precio_asc':
                         return parseFloat(a.dataset.precio) - parseFloat(b.dataset.precio);
-                    case 'ofertas':
-                        return b.dataset.oferta - a.dataset.oferta || a.dataset.nombre.localeCompare(b.dataset.nombre);
-                    case 'ninos':
-                        return b.dataset.nino - a.dataset.nino || a.dataset.nombre.localeCompare(b.dataset.nombre);
-                    case 'nombre':
+                    case 'precio_desc':
+                        return parseFloat(b.dataset.precio) - parseFloat(a.dataset.precio);
+                    case 'nombre_asc':
                     default:
                         return a.dataset.nombre.localeCompare(b.dataset.nombre);
                 }
             });
 
+            // 4. Re-insertar en orden
             cards.forEach(card => grid.appendChild(card));
         }
     </script>
