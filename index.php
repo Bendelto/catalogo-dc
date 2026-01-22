@@ -95,25 +95,37 @@ if ($singleTour) {
         .main-container { max-width: 1200px; margin: 0 auto; }
         .calc-container { max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
         
+        /* --- MODIFICACIÓN HEADER PARA GTRANSLATE --- */
         .site-header {
             background-color: #ffffff;
             box-shadow: 0 4px 20px rgba(0,0,0,0.04);
             padding: 15px 0;
-            text-align: center;
+            text-align: left; /* Alineado a la izquierda por defecto (móvil) */
+            padding-left: 20px; /* Margen izquierdo para que no se pegue al borde */
             margin-bottom: 30px;
         }
         .main-logo {
             width: 180px;
-            max-width: 70%;
+            max-width: 65%; /* Limitado para no chocar con el widget */
             height: auto;
-            display: block;
-            margin: 0 auto;
+            display: inline-block;
+            margin: 0; /* Sin margen automático */
         }
 
         @media (min-width: 992px) {
-            .site-header { padding: 31.5px 0; }
-            .main-logo { width: 288px; }
+            .site-header { 
+                padding: 31.5px 0; 
+                text-align: center; /* Vuelve a centrar en escritorio */
+                padding-left: 0;
+            }
+            .main-logo { 
+                width: 288px; 
+                max-width: 100%;
+                display: block;
+                margin: 0 auto; /* Centrado automático */
+            }
         }
+        /* --- FIN MODIFICACIÓN --- */
 
         .card-price { border: 0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; position: relative; }
         .card-price:hover { transform: translateY(-5px); }
