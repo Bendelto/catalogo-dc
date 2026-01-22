@@ -235,7 +235,7 @@ if ($singleTour) {
 
 <div class="site-header">
     <div class="container main-container d-lg-flex justify-content-between align-items-center">
-        <div class="text-center text-lg-start mb-3 mb-lg-0">
+        <div class="text-start mb-3 mb-lg-0">
             <a href="./">
                 <img src="logo.svg" alt="Descubre Cartagena" class="main-logo">
             </a>
