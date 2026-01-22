@@ -107,12 +107,15 @@ if (isset($_POST['add'])) {
         'descripcion' => $_POST['descripcion'] ?? '',
         'incluye' => $_POST['incluye'] ?? '',
         'no_incluye' => $_POST['no_incluye'] ?? '',
-        'horario' => $_POST['horario'] ?? '',
-        'punto_encuentro' => $_POST['punto_encuentro'] ?? '',
+        'info_adicional' => $_POST['info_adicional'] ?? '', // NUEVO CAMPO
         'imagen' => $datosAnteriores['imagen'] ?? '', 
         'galeria' => $galeriaActual,
         'oculto' => $datosAnteriores['oculto'] ?? false
     ];
+
+    // Limpieza de campos antiguos si existían
+    if(isset($datosAnteriores['horario'])) unset($datosAnteriores['horario']);
+    if(isset($datosAnteriores['punto_encuentro'])) unset($datosAnteriores['punto_encuentro']);
 
     // PROCESAR PORTADA
     if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] === 0) {
@@ -182,8 +185,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         'descripcion' => $d['descripcion'] ?? ($d['description'] ?? ''),
         'incluye' => $d['incluye'] ?? ($d['include'] ?? ''),
         'no_incluye' => $d['no_incluye'] ?? ($d['not_include'] ?? ''),
-        'horario' => $d['horario'] ?? ($d['schedule'] ?? ''),
-        'punto_encuentro' => $d['punto_encuentro'] ?? ($d['meeting_point'] ?? ''),
+        'info_adicional' => $d['info_adicional'] ?? '', // Cargar nuevo campo
         'imagen' => $d['imagen'] ?? '',
         'galeria' => $d['galeria'] ?? []
     ];
@@ -198,6 +200,8 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
     <title>Panel Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+
     <style>
         body { padding-bottom: 50px; background-color: #f8f9fa; }
         .img-preview-mini { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
@@ -207,8 +211,10 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         @media (max-width: 576px) { .btn-group-action { flex-direction: column; } .btn-group-action .btn { width: 100%; } }
         .row-hidden { background-color: #e9ecef; opacity: 0.75; }
         .row-hidden td { color: #6c757d; }
-        /* Badge para conteo de fotos */
         .badge-gallery { font-size: 0.65rem; background-color: #e7f1ff; color: #0d6efd; border: 1px solid #cce5ff; }
+        
+        /* Ajuste Summernote */
+        .note-editor .note-toolbar { background: #f8f9fa; }
     </style>
 </head>
 <body class="container py-4">
@@ -275,7 +281,7 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                     </div>
                 </div>
 
-                <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small fw-bold">Información</h6></div>
+                <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small fw-bold">Información Básica</h6></div>
                 
                 <div class="col-12">
                     <label class="small fw-bold">Descripción</label>
@@ -290,13 +296,10 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
                     <textarea name="no_incluye" class="form-control bg-danger bg-opacity-10" rows="4"><?= htmlspecialchars($tourToEdit['no_incluye'] ?? '') ?></textarea>
                 </div>
                 
-                <div class="col-md-6">
-                    <label class="small fw-bold">Horario</label>
-                    <textarea name="horario" class="form-control" rows="2"><?= htmlspecialchars($tourToEdit['horario'] ?? '') ?></textarea>
-                </div>
-                <div class="col-md-6">
-                    <label class="small fw-bold">Punto Encuentro</label>
-                    <textarea name="punto_encuentro" class="form-control" rows="2"><?= htmlspecialchars($tourToEdit['punto_encuentro'] ?? '') ?></textarea>
+                <div class="col-12 mt-3">
+                    <label class="small fw-bold text-dark mb-1"><i class="fa-solid fa-circle-info text-primary"></i> Información Adicional</label>
+                    <textarea id="summernote" name="info_adicional"><?= $tourToEdit['info_adicional'] ?? '' ?></textarea>
+                    <small class="text-muted">Aquí puedes poner horarios, puntos de encuentro y notas usando negritas, cursivas, listas, etc.</small>
                 </div>
 
                 <div class="col-12 mt-3"><h6 class="text-primary border-bottom pb-1 small fw-bold">Precios y Edades</h6></div>
@@ -335,7 +338,6 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
             <tbody>
                 <?php foreach ($tours as $slug => $tour): 
                     $estaOculto = isset($tour['oculto']) && $tour['oculto'] == true;
-                    // Contar fotos galería
                     $cntFotos = (!empty($tour['galeria']) && is_array($tour['galeria'])) ? count($tour['galeria']) : 0;
                 ?>
                 <tr class="<?= $slug == $editingSlug ? 'table-warning' : '' ?> <?= $estaOculto ? 'row-hidden' : '' ?>">
@@ -378,7 +380,25 @@ if (isset($_GET['edit']) && isset($tours[$_GET['edit']])) {
         </table>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+    
     <script>
+        // Inicializar editor
+        $('#summernote').summernote({
+            placeholder: 'Escribe aquí la información adicional...',
+            tabsize: 2,
+            height: 150,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'underline', 'clear']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['insert', ['link']],
+                ['view', ['fullscreen', 'codeview']]
+            ]
+        });
+
         const inputNombre = document.getElementById('inputNombre');
         const inputSlug = document.getElementById('inputSlug');
 

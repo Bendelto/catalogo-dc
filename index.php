@@ -40,8 +40,8 @@ if ($singleTour) {
     $desc = $singleTour['descripcion'] ?? $singleTour['description'] ?? '';
     $inc = $singleTour['incluye'] ?? $singleTour['include'] ?? '';
     $no_inc = $singleTour['no_incluye'] ?? $singleTour['not_include'] ?? '';
-    $horario = $singleTour['horario'] ?? $singleTour['schedule'] ?? '';
-    $punto = $singleTour['punto_encuentro'] ?? $singleTour['meeting_point'] ?? '';
+    // NUEVO: Campo Información Adicional
+    $info_adicional = $singleTour['info_adicional'] ?? '';
 
     // PRECIOS
     $precioBase = $singleTour['precio_cop'];
@@ -347,45 +347,20 @@ if ($singleTour) {
             </div>
         </div>
 
-        <?php if(!empty($horario) || !empty($punto)): ?>
+        <?php if(!empty($info_adicional)): ?>
         <div class="accordion accordion-flush mb-4" id="accordionExtras">
-            <?php if(!empty($horario)): ?>
             <div class="accordion-item">
                 <h2 class="accordion-header">
-                    <button class="accordion-button collapsed py-2 small" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHorario">
-                        <i class="fa-regular fa-clock me-2"></i> Horarios
+                    <button class="accordion-button collapsed py-2 small" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInfo">
+                        <i class="fa-solid fa-circle-info me-2 text-primary"></i> Información Adicional
                     </button>
                 </h2>
-                <div id="collapseHorario" class="accordion-collapse collapse" data-bs-parent="#accordionExtras">
+                <div id="collapseInfo" class="accordion-collapse collapse" data-bs-parent="#accordionExtras">
                     <div class="accordion-body text-secondary" style="font-size: 0.85rem;">
-                        <ul class="list-unstyled m-0">
-                            <?php foreach(explode("\n", $horario) as $line): if(trim($line)=='')continue; ?>
-                                <li class="mb-2 d-flex align-items-start"><i class="fa-regular fa-clock text-primary mt-1 me-2"></i><span><?= htmlspecialchars($line) ?></span></li>
-                            <?php endforeach; ?>
-                        </ul>
+                        <?= $info_adicional ?>
                     </div>
                 </div>
             </div>
-            <?php endif; ?>
-
-            <?php if(!empty($punto)): ?>
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed py-2 small" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePunto">
-                        <i class="fa-solid fa-map-location-dot me-2"></i> Punto de Encuentro
-                    </button>
-                </h2>
-                <div id="collapsePunto" class="accordion-collapse collapse" data-bs-parent="#accordionExtras">
-                    <div class="accordion-body text-secondary" style="font-size: 0.85rem;">
-                        <ul class="list-unstyled m-0">
-                            <?php foreach(explode("\n", $punto) as $line): if(trim($line)=='')continue; ?>
-                                <li class="mb-2 d-flex align-items-start"><i class="fa-solid fa-map-pin text-danger mt-1 me-2"></i><span><?= htmlspecialchars($line) ?></span></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <?php endif; ?>
         </div>
         <?php endif; ?>
 
