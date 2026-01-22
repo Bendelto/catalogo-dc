@@ -95,37 +95,33 @@ if ($singleTour) {
         .main-container { max-width: 1200px; margin: 0 auto; }
         .calc-container { max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
         
-        /* --- MODIFICACIÓN HEADER PARA GTRANSLATE --- */
+        /* --- HEADER --- */
         .site-header {
             background-color: #ffffff;
             box-shadow: 0 4px 20px rgba(0,0,0,0.04);
             padding: 15px 0;
-            text-align: left; /* Alineado a la izquierda por defecto (móvil) */
-            padding-left: 20px; /* Margen izquierdo para que no se pegue al borde */
             margin-bottom: 30px;
         }
         .main-logo {
             width: 180px;
-            max-width: 65%; /* Limitado para no chocar con el widget */
+            max-width: 65%;
             height: auto;
             display: inline-block;
-            margin: 0; /* Sin margen automático */
         }
 
         @media (min-width: 992px) {
             .site-header { 
-                padding: 31.5px 0; 
-                text-align: center; /* Vuelve a centrar en escritorio */
-                padding-left: 0;
+                padding: 20px 0; 
+                /* Se eliminó el text-align center para permitir distribución */
             }
             .main-logo { 
-                width: 288px; 
+                width: 250px; 
                 max-width: 100%;
                 display: block;
-                margin: 0 auto; /* Centrado automático */
+                /* Se eliminó el margin auto para permitir alineación izquierda */
             }
         }
-        /* --- FIN MODIFICACIÓN --- */
+        /* --- FIN HEADER --- */
 
         .card-price { border: 0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: block; background: white; transition: transform 0.2s; overflow: hidden; height: 100%; position: relative; }
         .card-price:hover { transform: translateY(-5px); }
@@ -172,7 +168,15 @@ if ($singleTour) {
         .btn-subtle { background-color: transparent; border: 1px solid #ced4da; color: #6c757d; border-radius: 50px; padding: 10px 20px; font-size: 0.9rem; width: 100%; display: block; text-align: center; text-decoration: none; transition: all 0.3s; margin-top: 20px; }
         .btn-subtle:hover { background-color: #e9ecef; border-color: #adb5bd; color: #495057; }
 
-        .search-container { max-width: 500px; margin: 0 auto 15px auto; position: relative; }
+        .search-container { max-width: 500px; margin: 0 auto 15px auto; position: relative; width: 100%; }
+        /* Ajuste para que el buscador en header no tenga margen en desktop */
+        @media (min-width: 992px) {
+            .search-container.in-header {
+                margin: 0;
+                width: 400px;
+            }
+        }
+
         .search-input { width: 100%; padding: 14px 20px 14px 50px; border-radius: 50px; border: 1px solid #eee; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.05); outline: none; transition: all 0.3s; font-size: 1rem; font-family: 'Poppins', sans-serif; }
         .search-input:focus { border-color: #0d6efd; box-shadow: 0 8px 20px rgba(13, 110, 253, 0.1); }
         .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #bbb; font-size: 1.1rem; }
@@ -215,10 +219,19 @@ if ($singleTour) {
 <body>
 
 <div class="site-header">
-    <div class="container">
-        <a href="./">
-            <img src="logo.svg" alt="Descubre Cartagena" class="main-logo">
-        </a>
+    <div class="container main-container d-lg-flex justify-content-between align-items-center">
+        <div class="text-center text-lg-start mb-3 mb-lg-0">
+            <a href="./">
+                <img src="logo.svg" alt="Descubre Cartagena" class="main-logo">
+            </a>
+        </div>
+        
+        <?php if (!$singleTour): ?>
+            <div class="search-container in-header">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="searchTour" class="search-input" placeholder="¿Qué te gustaría hacer?">
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -433,11 +446,7 @@ if ($singleTour) {
     </script>
 
 <?php else: ?>
-    <div class="search-container">
-        <i class="fa-solid fa-magnifying-glass search-icon"></i>
-        <input type="text" id="searchTour" class="search-input" placeholder="¿Qué te gustaría hacer?">
-    </div>
-
+    
     <div class="filter-btn-group">
         <button class="btn-filter active" onclick="sortTours('nombre', this)">Nombre (A-Z)</button>
         <button class="btn-filter" onclick="sortTours('precio_min', this)">Precio (Menor a mayor)</button>
