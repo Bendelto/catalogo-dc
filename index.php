@@ -99,7 +99,7 @@ if ($singleTour) {
             margin: 0 auto; 
             padding-bottom: 80px; 
         }
-        /* Aumento del 20% solo en escritorio (600px + 120px = 720px) */
+        /* Aumento del 20% solo en escritorio */
         @media (min-width: 992px) {
             .calc-container {
                 max-width: 720px;
@@ -142,9 +142,34 @@ if ($singleTour) {
         .gallery-reel-item { height: 38vh; width: auto; max-width: none; border-radius: 12px; scroll-snap-align: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: zoom-in; background: #fff; }
         @media (min-width: 768px) { .gallery-reel-item { height: 350px; } }
         
-        #lightbox { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; flex-direction: column; }
-        #lightbox img { max-width: 100%; max-height: 90vh; object-fit: contain; }
-        .lightbox-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 2rem; cursor: pointer; }
+        /* ESTILOS LIGHTBOX MEJORADO */
+        #lightbox { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; user-select: none; }
+        #lightbox img { max-width: 90%; max-height: 85vh; object-fit: contain; pointer-events: none; }
+        
+        .lightbox-close { position: absolute; top: 20px; right: 25px; color: white; font-size: 2.5rem; cursor: pointer; z-index: 10002; line-height: 1; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        
+        /* Flechas de navegación */
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.7);
+            font-size: 3rem;
+            cursor: pointer;
+            padding: 20px;
+            z-index: 10001;
+            transition: color 0.3s;
+        }
+        .lightbox-nav:hover { color: #fff; }
+        .lightbox-nav.prev { left: 5px; }
+        .lightbox-nav.next { right: 5px; }
+        
+        /* Para evitar superposicion en movil muy pequeño */
+        @media (max-width: 576px) {
+            .lightbox-nav { font-size: 2rem; padding: 10px; }
+        }
 
         .info-box { background: white; padding: 25px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 2px 15px rgba(0,0,0,0.03); }
         .list-check li { list-style: none; padding-left: 0; margin-bottom: 8px; font-size: 0.95rem; }
@@ -262,7 +287,12 @@ if ($singleTour) {
     </div>
 </div>
 
-<div id="lightbox" onclick="closeLightbox()"><div class="lightbox-close">&times;</div><img id="lightbox-img" src=""></div>
+<div id="lightbox">
+    <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+    <button class="lightbox-nav prev" onclick="changeImg(-1)">&#10094;</button>
+    <img id="lightbox-img" src="">
+    <button class="lightbox-nav next" onclick="changeImg(1)">&#10095;</button>
+</div>
 
 <div class="container main-container">
 <?php if ($singleTour): ?>
@@ -285,8 +315,8 @@ if ($singleTour) {
         ?>
         <?php if(count($imagenesParaMostrar) > 0): ?>
             <div class="gallery-reel-container">
-                <?php foreach($imagenesParaMostrar as $imgSrc): ?>
-                    <img src="<?= $imgSrc ?>" class="gallery-reel-item" onclick="openLightbox('<?= $imgSrc ?>')" alt="Foto">
+                <?php foreach($imagenesParaMostrar as $idx => $imgSrc): ?>
+                    <img src="<?= $imgSrc ?>" class="gallery-reel-item" onclick="openLightbox(<?= $idx ?>)" alt="Foto">
                 <?php endforeach; ?>
             </div>
             <div class="text-center text-muted small mb-4" style="font-size:0.75rem;"><i class="fa-solid fa-hand-pointer"></i> Desliza o toca para ampliar</div>
@@ -427,10 +457,74 @@ if ($singleTour) {
         inputAdult.addEventListener('input', calc); inputKid.addEventListener('input', calc);
         calc();
 
+        // --- GALERIA INTERACTIVA (SLIDER / SWIPE) ---
+        
+        // 1. Obtenemos las imágenes desde PHP
+        const galleryImages = <?= json_encode($imagenesParaMostrar) ?>;
+        let currentImgIndex = 0;
+
         const lightbox = document.getElementById('lightbox');
         const lightboxImg = document.getElementById('lightbox-img');
-        function openLightbox(src) { lightboxImg.src = src; lightbox.style.display = 'flex'; }
-        function closeLightbox() { lightbox.style.display = 'none'; }
+        
+        // Abrir Modal
+        function openLightbox(index) {
+            currentImgIndex = index;
+            updateLightboxImage();
+            lightbox.style.display = 'flex';
+        }
+
+        // Actualizar src de la imagen
+        function updateLightboxImage() {
+            if(galleryImages.length > 0) {
+                lightboxImg.src = galleryImages[currentImgIndex];
+            }
+        }
+
+        // Navegar (Flechas)
+        function changeImg(step) {
+            currentImgIndex += step;
+            // Loop circular (si llega al final vuelve al inicio y viceversa)
+            if(currentImgIndex >= galleryImages.length) currentImgIndex = 0;
+            if(currentImgIndex < 0) currentImgIndex = galleryImages.length - 1;
+            updateLightboxImage();
+        }
+
+        // Cerrar Modal
+        function closeLightbox() {
+            lightbox.style.display = 'none';
+        }
+        
+        // Cerrar al dar click fuera de la imagen (en el fondo negro)
+        lightbox.addEventListener('click', function(e){
+            if(e.target === lightbox) {
+                closeLightbox();
+            }
+        });
+
+        // --- LÓGICA DE SWIPE (TACTIL) ---
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        lightbox.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+
+        lightbox.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, {passive: true});
+
+        function handleSwipe() {
+            // Deslizar izquierda (Siguiente)
+            if (touchStartX - touchEndX > 50) {
+                changeImg(1);
+            }
+            // Deslizar derecha (Anterior)
+            if (touchEndX - touchStartX > 50) {
+                changeImg(-1);
+            }
+        }
+        // ---------------------------------------------
 
         function shareNative() {
             if (navigator.share) {
