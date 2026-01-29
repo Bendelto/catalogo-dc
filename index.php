@@ -142,11 +142,30 @@ if ($singleTour) {
         .gallery-reel-item { height: 38vh; width: auto; max-width: none; border-radius: 12px; scroll-snap-align: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: zoom-in; background: #fff; }
         @media (min-width: 768px) { .gallery-reel-item { height: 350px; } }
         
-        /* ESTILOS LIGHTBOX MEJORADO */
+        /* ESTILOS LIGHTBOX */
         #lightbox { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; user-select: none; }
         #lightbox img { max-width: 90%; max-height: 85vh; object-fit: contain; pointer-events: none; }
         
-        .lightbox-close { position: absolute; top: 20px; right: 25px; color: white; font-size: 2.5rem; cursor: pointer; z-index: 10002; line-height: 1; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        /* Botón Cerrar (X) mejorado */
+        .lightbox-close { 
+            position: absolute; 
+            top: 25px; 
+            right: 25px; 
+            color: white; 
+            font-size: 1.5rem; 
+            background-color: rgba(0, 0, 0, 0.6); /* Fondo para contraste */
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer; 
+            z-index: 10010; /* Z-index alto para asegurar visibilidad */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            transition: background 0.3s;
+        }
+        .lightbox-close:hover { background-color: rgba(255, 255, 255, 0.2); }
         
         /* Flechas de navegación */
         .lightbox-nav {
@@ -166,9 +185,9 @@ if ($singleTour) {
         .lightbox-nav.prev { left: 5px; }
         .lightbox-nav.next { right: 5px; }
         
-        /* Para evitar superposicion en movil muy pequeño */
         @media (max-width: 576px) {
             .lightbox-nav { font-size: 2rem; padding: 10px; }
+            .lightbox-close { top: 20px; right: 20px; width: 40px; height: 40px; font-size: 1.2rem; }
         }
 
         .info-box { background: white; padding: 25px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 2px 15px rgba(0,0,0,0.03); }
@@ -288,7 +307,7 @@ if ($singleTour) {
 </div>
 
 <div id="lightbox">
-    <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+    <div class="lightbox-close" onclick="closeLightbox()"><i class="fa-solid fa-xmark"></i></div>
     <button class="lightbox-nav prev" onclick="changeImg(-1)">&#10094;</button>
     <img id="lightbox-img" src="">
     <button class="lightbox-nav next" onclick="changeImg(1)">&#10095;</button>
@@ -459,43 +478,38 @@ if ($singleTour) {
 
         // --- GALERIA INTERACTIVA (SLIDER / SWIPE) ---
         
-        // 1. Obtenemos las imágenes desde PHP
         const galleryImages = <?= json_encode($imagenesParaMostrar) ?>;
         let currentImgIndex = 0;
 
         const lightbox = document.getElementById('lightbox');
         const lightboxImg = document.getElementById('lightbox-img');
         
-        // Abrir Modal
         function openLightbox(index) {
             currentImgIndex = index;
             updateLightboxImage();
             lightbox.style.display = 'flex';
         }
 
-        // Actualizar src de la imagen
         function updateLightboxImage() {
             if(galleryImages.length > 0) {
                 lightboxImg.src = galleryImages[currentImgIndex];
             }
         }
 
-        // Navegar (Flechas)
         function changeImg(step) {
             currentImgIndex += step;
-            // Loop circular (si llega al final vuelve al inicio y viceversa)
             if(currentImgIndex >= galleryImages.length) currentImgIndex = 0;
             if(currentImgIndex < 0) currentImgIndex = galleryImages.length - 1;
             updateLightboxImage();
         }
 
-        // Cerrar Modal
         function closeLightbox() {
             lightbox.style.display = 'none';
         }
         
-        // Cerrar al dar click fuera de la imagen (en el fondo negro)
         lightbox.addEventListener('click', function(e){
+            // Si el click fue directo en el fondo negro, cerrar
+            // (evita cerrar si das click a la imagen o botones)
             if(e.target === lightbox) {
                 closeLightbox();
             }
@@ -515,16 +529,13 @@ if ($singleTour) {
         }, {passive: true});
 
         function handleSwipe() {
-            // Deslizar izquierda (Siguiente)
             if (touchStartX - touchEndX > 50) {
-                changeImg(1);
+                changeImg(1); // Swipe Izq -> Siguiente
             }
-            // Deslizar derecha (Anterior)
             if (touchEndX - touchStartX > 50) {
-                changeImg(-1);
+                changeImg(-1); // Swipe Der -> Anterior
             }
         }
-        // ---------------------------------------------
 
         function shareNative() {
             if (navigator.share) {
