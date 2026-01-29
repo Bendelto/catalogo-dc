@@ -146,14 +146,15 @@ if ($singleTour) {
         #lightbox { display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; user-select: none; }
         #lightbox img { max-width: 90%; max-height: 85vh; object-fit: contain; pointer-events: none; }
         
-        /* Botón Cerrar (X) mejorado */
+        /* Botón Cerrar (X) ROBUSTO */
         .lightbox-close { 
             position: absolute; 
             top: 25px; 
             right: 25px; 
             color: white; 
-            font-size: 1.5rem; 
-            background-color: rgba(0, 0, 0, 0.6); /* Fondo para contraste */
+            font-size: 2.5rem; /* Tamaño de letra grande para la X */
+            line-height: 1; /* Centrado vertical */
+            background-color: rgba(0, 0, 0, 0.6); 
             width: 45px;
             height: 45px;
             border-radius: 50%;
@@ -161,9 +162,11 @@ if ($singleTour) {
             align-items: center;
             justify-content: center;
             cursor: pointer; 
-            z-index: 10010; /* Z-index alto para asegurar visibilidad */
+            z-index: 10010; 
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             transition: background 0.3s;
+            padding-bottom: 5px; /* Pequeño ajuste visual */
+            font-family: Arial, sans-serif; /* Asegura que la X se vea bien */
         }
         .lightbox-close:hover { background-color: rgba(255, 255, 255, 0.2); }
         
@@ -187,7 +190,7 @@ if ($singleTour) {
         
         @media (max-width: 576px) {
             .lightbox-nav { font-size: 2rem; padding: 10px; }
-            .lightbox-close { top: 20px; right: 20px; width: 40px; height: 40px; font-size: 1.2rem; }
+            .lightbox-close { top: 20px; right: 20px; width: 40px; height: 40px; font-size: 2rem; }
         }
 
         .info-box { background: white; padding: 25px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 2px 15px rgba(0,0,0,0.03); }
@@ -307,7 +310,7 @@ if ($singleTour) {
 </div>
 
 <div id="lightbox">
-    <div class="lightbox-close" onclick="closeLightbox()"><i class="fa-solid fa-xmark"></i></div>
+    <div class="lightbox-close" onclick="closeLightbox()">&times;</div>
     <button class="lightbox-nav prev" onclick="changeImg(-1)">&#10094;</button>
     <img id="lightbox-img" src="">
     <button class="lightbox-nav next" onclick="changeImg(1)">&#10095;</button>
@@ -508,8 +511,6 @@ if ($singleTour) {
         }
         
         lightbox.addEventListener('click', function(e){
-            // Si el click fue directo en el fondo negro, cerrar
-            // (evita cerrar si das click a la imagen o botones)
             if(e.target === lightbox) {
                 closeLightbox();
             }
@@ -530,10 +531,10 @@ if ($singleTour) {
 
         function handleSwipe() {
             if (touchStartX - touchEndX > 50) {
-                changeImg(1); // Swipe Izq -> Siguiente
+                changeImg(1);
             }
             if (touchEndX - touchStartX > 50) {
-                changeImg(-1); // Swipe Der -> Anterior
+                changeImg(-1);
             }
         }
 
